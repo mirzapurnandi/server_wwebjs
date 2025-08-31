@@ -1,0 +1,16 @@
+HOST_WEBHOOK = https://api.k1nguniverse.com/api/v1/dlr/listen-dlr-k1ng-wa-engine
+AUTH_TOKEN = NOWikbtVP1
+TYPE = "PUSH"
+PROXY_SERVER = ""
+STORAGE_FILE = "/home/cloud_file/"
+STORAGE_HOST = "https://15.wagw.storage.k1nguniverse.com/"
+
+
+//Install di dalam folder node_modules/web_whatsapp.js
+npm install puppeteer-extra puppeteer-extra-plugin-stealth
+
+
+//custom add di file src/Client.js
+const puppeteer = require('puppeteer-extra')
+const StealthPlugin = require('puppeteer-extra-plugin-stealth')
+puppeteer.use(StealthPlugin())

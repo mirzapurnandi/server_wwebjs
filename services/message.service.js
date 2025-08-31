@@ -1,0 +1,287 @@
+const routingModel = require("../models/routing.model");
+const routingDetailModel = require("../models/routingDetail.model");
+const transactionModel = require("../models/transaction.model");
+const messageModel = require("../models/message.model");
+const providerDetailModel = require("../models/providerDetail.model");
+const engineService = require("./engine.service");
+const walletService = require("./wallet.service");
+const {
+    queueInitSender,
+    queueSendMessage,
+    queueWebhook,
+} = require("../config/queueBullMQ");
+const CustomError = require("../helpers/customError");
+const { addSeconds, differenceInSeconds } = require("date-fns");
+const defaultService = require("./extends/default.service");
+const xlsx = require("xlsx");
+const fs = require("fs");
+const { validateSendMessage } = require("../requests/message.request");
+
+class messageService extends defaultService {
+    processSendMessage = async (reqBody, reqData) => {
+        await validateSendMessage(reqBody);
+        const checkSenderName = await routingModel.checkSenderName(
+            reqBody.sender_name
+        );
+        const routing = checkSenderName.rows;
+        if (routing.length == 0) {
+            throw new CustomError("Maaf, Sender tidak ditemukan", 400);
+        }
+
+        const checkSender = await routingModel.getSender(
+            reqData.user_id,
+            reqBody.sender_name
+        );
+        if (!checkSender) {
+            throw new CustomError("Maaf, Engine tidak ada yang Aktif", 400);
+        }
+
+        let price = routing[0].price_per_message;
+        await walletService.processing(reqData.email, price);
+
+        const insertTransaction = await transactionModel.insert({
+            user_id: reqData.user_id,
+            sender_name: reqBody.sender_name,
+            destination: reqBody.destination,
+            content: reqBody.content,
+            price: price,
+        });
+        if (!insertTransaction) {
+            throw new CustomError("Maaf, Transaksi gagal di input", 400);
+        }
+
+        queueInitSender.add("processing_data", {
+            transaction_id: insertTransaction.id_transaction,
+        });
+
+        return insertTransaction;
+    };
+
+    processGetSender = async (transaction_id) => {
+        try {
+            const getTransaction = await transactionModel.findByID(
+                transaction_id
+            );
+            if (getTransaction && getTransaction.status_code == 0) {
+                const getSender = await routingModel.getSender(
+                    getTransaction.user_id,
+                    getTransaction.sender_name
+                );
+
+                if (getSender) {
+                    const secondDelay = parseInt(getSender.delay);
+                    const dateNow = new Date();
+                    let dateSave = dateNow;
+                    let dataDelay = 200;
+                    let checkDataDelay;
+
+                    if (getSender.used_at === null) {
+                        checkDataDelay = await this.processSettingDelay(
+                            getTransaction,
+                            dateNow
+                        );
+
+                        if (checkDataDelay !== null) {
+                            dataDelay = checkDataDelay * 1000;
+                            dateSave = addSeconds(dateNow, checkDataDelay);
+                        }
+                    } else {
+                        const usedAt = new Date(getSender.used_at);
+                        const selisih = differenceInSeconds(usedAt, dateNow);
+
+                        if (selisih < 0 && selisih + secondDelay <= 0) {
+                            checkDataDelay = await this.processSettingDelay(
+                                getTransaction,
+                                dateNow
+                            );
+
+                            if (checkDataDelay !== null) {
+                                dataDelay = checkDataDelay * 1000;
+                                dateSave = addSeconds(dateNow, checkDataDelay);
+                            }
+                        } else {
+                            const totalDelay = selisih + secondDelay;
+                            dateSave = addSeconds(usedAt, secondDelay);
+                            dataDelay = totalDelay * 1000;
+                        }
+                    }
+
+                    await routingDetailModel.updateUsedAt(
+                        getSender.routingdetail_id,
+                        dateSave,
+                        getTransaction.id_transaction
+                    );
+
+                    // send to queue
+                    queueSendMessage.add(
+                        "sending_message",
+                        {
+                            type: "insert",
+                            dataTransaction: getTransaction,
+                            dataSender: getSender,
+                            dataDelay: secondDelay,
+                        },
+                        {
+                            delay: dataDelay,
+                            // removeOnComplete: true,
+                        }
+                    );
+                } else {
+                    // kirim notifikasi ke admin dari SLACK
+                }
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    sendMessage = async (
+        dataTransaction,
+        dataSender,
+        dataDelay,
+        retry = 0,
+        extraData = {}
+    ) => {
+        if (retry > 3) {
+            console.log("Max retry reached");
+            return false;
+        }
+        try {
+            const engineSendMessage = await engineService.sendMessage(
+                dataSender.license_key,
+                dataTransaction.destination,
+                dataTransaction.content,
+                dataDelay,
+                "typing"
+            );
+
+            let statusCode = 0,
+                messageID = null,
+                access = extraData.access || null,
+                messageStatus = extraData.messageStatus || null;
+
+            if (engineSendMessage.status == 200) {
+                const engine = engineSendMessage.data.data;
+                messageID = engine.id_message;
+                statusCode = 1;
+
+                queueWebhook.add("send_webhook", {
+                    transaction_id: dataTransaction.id_transaction,
+                    status: "success",
+                });
+            } else if (engineSendMessage.status == 500) {
+                // Cari Engine Backup
+                const getSender = await routingModel.getSender(
+                    dataTransaction.user_id,
+                    dataTransaction.sender_name,
+                    "ASC",
+                    true
+                );
+                if (getSender) {
+                    const dateSave = new Date();
+                    await routingDetailModel.updateUsedAt(
+                        getSender.routingdetail_id,
+                        dateSave,
+                        dataTransaction.id_transaction
+                    );
+
+                    return await this.sendMessage(
+                        dataTransaction,
+                        getSender,
+                        dataDelay,
+                        retry + 1,
+                        {
+                            access: dataSender.routingdetail_id,
+                            messageStatus: "BACKUP",
+                        }
+                    );
+                }
+
+                statusCode = 2;
+                await providerDetailModel.update(dataSender.id, {
+                    label: "DISCONNECT",
+                    is_active: false,
+                });
+
+                queueWebhook.add("send_webhook", {
+                    transaction_id: dataTransaction.id_transaction,
+                    status: "failed",
+                });
+            }
+
+            await transactionModel.update(dataTransaction.id_transaction, {
+                routingdetail_id: dataSender.routingdetail_id,
+                message_id: messageID,
+                status_code: statusCode,
+                access: access,
+                message_status: messageStatus,
+            });
+            //*------
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    processUpload = async (filePath, reqUser) => {
+        try {
+            const workbook = xlsx.readFile(filePath);
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+
+            const jsonData = xlsx.utils.sheet_to_json(worksheet, {
+                range: 1,
+                defval: "",
+            });
+
+            for await (const row of jsonData) {
+                await messageModel.insert({
+                    user_id: reqUser.id,
+                    destination: row.handphone,
+                    content: row.message,
+                });
+            }
+
+            // Hapus file setelah dibaca
+            fs.unlinkSync(filePath);
+            return jsonData;
+        } catch (error) {
+            throw new CustomError(
+                "Gagal membaca file Excel: " + error.message,
+                400
+            );
+        }
+    };
+
+    processSendBulkMessage = async (reqBody, reqUser) => {
+        const checkTemp = await messageModel.findAll(1, 1000, reqUser.id);
+        if (!checkTemp.total === 0) {
+            throw new CustomError("Data Kosong", 400);
+        }
+
+        const checkSenderName = await routingModel.checkSenderName(
+            reqBody.sender_name
+        );
+        if (checkSenderName.rows.length == 0) {
+            throw new CustomError("Maaf, Sender tidak ditemukan", 400);
+        }
+
+        for await (const row of checkTemp.result) {
+            const insertTransaction = await transactionModel.insert({
+                user_id: row.user_id,
+                sender_name: reqBody.sender_name,
+                destination: row.destination,
+                content: row.content,
+            });
+            if (insertTransaction) {
+                await queueInitSender.add("processing_data", {
+                    transaction_id: insertTransaction.id_transaction,
+                });
+                await messageModel.delete(row.id);
+            }
+        }
+
+        return checkTemp;
+    };
+}
+
+module.exports = new messageService();

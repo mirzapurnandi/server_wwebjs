@@ -1,0 +1,53 @@
+## install kebutuhan server
+- sudo yum update -y
+- sudo yum install -y epel-release 
+- curl -fsSL https://rpm.nodesource.com/setup_16.x | sudo bash -
+- sudo yum install -y nodejs
+- sudo yum install -y nano
+- sudo npm install pm2@latest -g
+- sudo yum install -y htop
+- sudo yum install -y chromium
+- sudo yum install alsa-lib.x86_64 atk.x86_64 cups-libs.x86_64 gtk3.x86_64 ipa-gothic-fonts libXcomposite.x86_64 libXcursor.x86_64 libXdamage.x86_64 libXext.x86_64 libXi.x86_64 libXrandr.x86_64 libXScrnSaver.x86_64 libXtst.x86_64 pango.x86_64 xorg-x11-fonts-100dpi xorg-x11-fonts-75dpi xorg-x11-fonts-cyrillic xorg-x11-fonts-misc xorg-x11-fonts-Type1 xorg-x11-utils
+- sudo yum update nss -y
+
+## tambahan swap
+swapon -s
+free -m
+df -h
+sudo dd if=/dev/zero of=/swapfile count=4096 bs=1MiB
+ls -lh /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+sudo nano /etc/fstab
+	// tambah di baris paling bawah
+	/swapfile	swap    swap    sw  0 0
+
+cat /proc/sys/vm/vfs_cache_pressure
+sudo sysctl vm.vfs_cache_pressure=50
+sudo nano /etc/sysctl.conf
+
+
+## tutorial
+https://techviewleo.com/install-node-js-on-centos-linux/
+https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-centos-7
+https://www.digitalocean.com/community/tutorials/how-to-add-swap-on-centos-7
+https://poopcode.com/install-node-js-and-pm2-in-centos-7/
+
+## if error
+https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md
+
+
+## PM2
+- systemctl enable pm2 root
+- pm2 install pm2-logrotate
+
+*setting*
+$ pm2 set pm2-logrotate:max_size 50M
+$ pm2 set pm2-logrotate:retain 30
+$ pm2 set pm2-logrotate:compress false
+$ pm2 set pm2-logrotate:dateFormat YYYY-MM-DD_HH-mm-ss
+$ pm2 set pm2-logrotate:workerInterval 3600
+$ pm2 set pm2-logrotate:rotateInterval 0 0 * * *
+$ pm2 set pm2-logrotate:rotateModule true
+

@@ -1,0 +1,47 @@
+- switch linux account to root user
+- add ip vm to cloudflare number.wagw.temanoke.com
+- copy script KUWAEngine.js & pm2.config.js to /home/wa-engine/
+- whitelist ip in k1nguniverse.com to push DLR (cloudflare)
+
+=== === === === === === === === === === === === === === === === === === === ===
+sudo dnf upgrade --refresh -y
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+sudo dnf install google-chrome-stable_current_x86_64.rpm -y
+sudo dnf install nodejs -y
+
+
+##add firewall port : 4600
+firewall-cmd --zone=public --permanent --add-port=4600/tcp
+firewall-cmd --reload
+firewall-cmd --list-ports
+
+##add script to setting unlimited:
+nano /etc/security/limits.conf
+root       hard    nproc     unlimited
+root       -    nproc     unlimited
+*          -    nproc     unlimited
+
+ulimit -u unlimited
+
+##for autologin, add script :
+nano /etc/gdm/custom.conf 
+[daemon]
+AutomaticLogin=root
+AutomaticLoginEnable=True
+
+## Disabled SELinux
+nano /etc/selinux/config
+
+npm i pm2@latest -g
+npm i whatsapp-web.js / npm install
+pm2 install pm2-logrotate
+pm2 set pm2-logrotate:max_size 20M
+pm2 set pm2-logrotate:workerInterval 3600
+pm2 startup
+pm2 start pm2.config.js
+pm2 save
+
+systemctl enable --now cockpit.socket
+
+
+pm2 restart wa
