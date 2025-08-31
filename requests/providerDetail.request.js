@@ -47,12 +47,14 @@ const validateInsertProviderDetail = async (data) => {
 const validateUpdateProviderDetail = async (data) => {
     const validationRule = {
         is_active: "boolean",
-        label: "in:ACTIVE,DISCONNECT,WAITING",
+        price: "numeric",
+        label: "in:ACTIVE,DISCONNECT,WAITING,CONNECTED",
         expired: "date",
     };
 
     const validationMessage = {
         required: ":attribute harus diisi",
+        numeric: ":attribute harus angka",
         in: ":attribute hanya :in",
         boolean: ":attribute harus boolean true atau false",
     };

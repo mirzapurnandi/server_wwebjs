@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.provider_details
     price double precision DEFAULT 0,
     uuid text COLLATE pg_catalog."default" NOT NULL,
     description text NULL,
+    info_hp varchar(255) NULL,
     expired_at timestamp without time zone,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,

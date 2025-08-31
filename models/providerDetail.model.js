@@ -101,6 +101,7 @@ class providerDetailModel {
         if ("expired" in data) update += `expired_at = '${data.expired}', `;
         if ("description" in data)
             update += `description = '${data.description}', `;
+        if ("info_hp" in data) update += `info_hp = '${data.info_hp}', `;
         update += `updated_at = $2`;
 
         let where = `id = $1`;
