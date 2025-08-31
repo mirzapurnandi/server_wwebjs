@@ -6,10 +6,13 @@ class DBConnection {
     constructor() {
         this.db = new Pool({
             user: process.env.DB_USER || "mirza",
-            password: process.env.DB_PASSWORD || "Masyithah1302.",
+            password: process.env.DB_PASSWORD || "Hanacankaliny03.",
             host: process.env.DB_HOST || "localhost",
             port: process.env.DB_PORT || "5432",
-            database: process.env.DB_NAME || "db_wwebjs_new",
+            database: process.env.DB_NAME || "db_wwebjs",
+            max: 20,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 5000,
         });
 
         this.checkConnection();
