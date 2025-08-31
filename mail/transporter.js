@@ -8,12 +8,15 @@ const transporter = nodemailer.createTransport({
         user: "noreply@wasend.id",
         pass: "Masyithah1302.",
     },
+    tls: {
+        rejectUnauthorized: false,
+    },
 });
 
 // checking connection
 transporter.verify(function (error, success) {
     if (error) {
-        console.log(error);
+        console.error("SMTP Connection Error:", error);
     } else {
         console.log("Mail server is running...");
     }
