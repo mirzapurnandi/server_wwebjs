@@ -16,13 +16,12 @@ class engineService {
      * Mengambil data dari API dengan metode GET
      * @param {RequestData} data - { url: string, apikey: string}
      */
-    getData = async (provider_id) => {
+    getData = async (datas) => {
         try {
-            const getProvider = await provider.findOne(provider_id);
-            const result = await axios.get(getProvider.url, {
+            const result = await axios.get(datas.url, {
                 headers: {
                     "Content-Type": "application/json",
-                    "x-purnand-token": getProvider.apikey,
+                    "x-purnand-token": datas.apikey,
                 },
             });
             logger.info("Axios Result:", result.data);
