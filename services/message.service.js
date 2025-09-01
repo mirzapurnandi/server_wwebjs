@@ -17,7 +17,6 @@ const xlsx = require("xlsx");
 const fs = require("fs");
 const { validateSendMessage } = require("../requests/message.request");
 const moment = require("moment-timezone");
-const dateNowWIB = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
 
 class messageService extends defaultService {
     processSendMessage = async (reqBody, reqData) => {
@@ -72,7 +71,9 @@ class messageService extends defaultService {
 
                 if (getSender) {
                     const secondDelay = parseInt(getSender.delay);
-                    const dateNow = dateNowWIB;
+                    const dateNow = moment()
+                        .tz("Asia/Jakarta")
+                        .format("YYYY-MM-DD HH:mm:ss");
                     let dateSave = dateNow;
                     let dataDelay = 200;
                     let checkDataDelay;
@@ -183,7 +184,9 @@ class messageService extends defaultService {
                     true
                 );
                 if (getSender) {
-                    const dateSave = dateNowWIB;
+                    const dateSave = moment()
+                        .tz("Asia/Jakarta")
+                        .format("YYYY-MM-DD HH:mm:ss");
                     await routingDetailModel.updateUsedAt(
                         getSender.routingdetail_id,
                         dateSave,

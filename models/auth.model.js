@@ -3,7 +3,6 @@ const bcrypt = require("bcryptjs");
 const uuid = require("uuid");
 
 const moment = require("moment-timezone");
-const dateNowWIB = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
 class AuthModel {
     findUserToken = async (userId) => {
         if (!userId) return null;
@@ -15,7 +14,9 @@ class AuthModel {
 
     updateUserToken = async (userId, refreshToken, status = true) => {
         if (!userId || !refreshToken) return null;
-        const dateNow = dateNowWIB;
+        const dateNow = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss");
         let sql = `UPDATE user_tokens SET logout = $1, updated_at = $2 WHERE user_id = $3 AND refresh_token= $4 RETURNING *`;
         const data = await db.query(sql, [
             status,
@@ -31,7 +32,9 @@ class AuthModel {
         const hashedPassword = await bcrypt.hash(data.password, 10);
         let Uuid = uuid.v4();
         let id = Uuid.split("-").join("Y");
-        const dateNow = dateNowWIB;
+        const dateNow = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss");
         let sql = `INSERT INTO users (id, name, username, email, password, level, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`;
 
         const result = await db.query(sql, [
@@ -85,7 +88,9 @@ class AuthModel {
     };
 
     saveDataToken = async (data) => {
-        const dateNow = dateNowWIB;
+        const dateNow = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss");
         let sql = `INSERT INTO user_tokens (user_id, token, refresh_token, created_at) VALUES ($1, $2, $3, $4) RETURNING *`;
         return await db.query(sql, [
             data.user_id,

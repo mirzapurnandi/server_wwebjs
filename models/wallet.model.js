@@ -1,7 +1,6 @@
 const db = require("../config/db/connection");
 const uuid = require("uuid");
 const moment = require("moment-timezone");
-const dateNowWIB = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
 class WalletModel {
     constructor() {
         this.table = "wallets";
@@ -54,7 +53,9 @@ class WalletModel {
         const point = data.point;
         const info = data.info;
         const wallettype = data.wallettype;
-        const created_at = dateNowWIB;
+        const created_at = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss");
 
         let Uuid = uuid.v4();
         let uuids = Uuid.split("-").join("W");

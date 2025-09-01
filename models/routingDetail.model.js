@@ -1,7 +1,6 @@
 const db = require("../config/db/connection");
 const uuid = require("uuid");
 const moment = require("moment-timezone");
-const dateNowWIB = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
 class RoutingDetailModel {
     findOne = async (id) => {
         if (!id) return null;
@@ -22,7 +21,9 @@ class RoutingDetailModel {
         const providerdetail_id = data.providerdetail_id;
         const status = data.status ?? true;
         const is_backup = data.is_backup ?? true;
-        const created_at = dateNowWIB;
+        const created_at = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss");
 
         let Uuid = uuid.v4();
         let uuids = Uuid.split("-").join("RD");
@@ -40,7 +41,9 @@ class RoutingDetailModel {
     };
 
     updateUsedAt = async (routingDetailID, usedAt, transactionID = null) => {
-        const updatedAt = dateNowWIB;
+        const updatedAt = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss");
 
         let sql = `UPDATE routing_details SET used_at = $1, updated_at = $2 WHERE id = $3 RETURNING *`;
         const data = await db.query(sql, [usedAt, updatedAt, routingDetailID]);
