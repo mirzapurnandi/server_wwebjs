@@ -1,6 +1,3 @@
-const { overrideGlobalDate } = require("./utils/date.js");
-overrideGlobalDate();
-
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");

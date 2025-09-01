@@ -14,7 +14,8 @@ class defaultService {
                 parseInt(getSender.delay) / parseInt(getSender.count)
             ).toFixed(2);
 
-            const usedAt = new Date(getSender.used_at);
+            const usedAt = moment(getSender.used_at).tz("Asia/Jakarta");
+            // const usedAt = new Date(getSender.used_at);
             let selisih = differenceInSeconds(usedAt, dateNow);
             const result = parseInt(selisih) + parseFloat(secondDelay);
             if (result >= 0) return result;

@@ -16,6 +16,8 @@ const defaultService = require("./extends/default.service");
 const xlsx = require("xlsx");
 const fs = require("fs");
 const { validateSendMessage } = require("../requests/message.request");
+const moment = require("moment-timezone");
+const dateNowWIB = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
 
 class messageService extends defaultService {
     processSendMessage = async (reqBody, reqData) => {
@@ -70,7 +72,7 @@ class messageService extends defaultService {
 
                 if (getSender) {
                     const secondDelay = parseInt(getSender.delay);
-                    const dateNow = new Date();
+                    const dateNow = dateNowWIB;
                     let dateSave = dateNow;
                     let dataDelay = 200;
                     let checkDataDelay;
@@ -86,7 +88,10 @@ class messageService extends defaultService {
                             dateSave = addSeconds(dateNow, checkDataDelay);
                         }
                     } else {
-                        const usedAt = new Date(getSender.used_at);
+                        const usedAt = moment(getSender.used_at).tz(
+                            "Asia/Jakarta"
+                        );
+                        // const usedAt = new Date(getSender.used_at);
                         const selisih = differenceInSeconds(usedAt, dateNow);
 
                         if (selisih < 0 && selisih + secondDelay <= 0) {
@@ -178,7 +183,7 @@ class messageService extends defaultService {
                     true
                 );
                 if (getSender) {
-                    const dateSave = new Date();
+                    const dateSave = dateNowWIB;
                     await routingDetailModel.updateUsedAt(
                         getSender.routingdetail_id,
                         dateSave,

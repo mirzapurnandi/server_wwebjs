@@ -1,5 +1,6 @@
 const db = require("../config/db/connection");
-
+const moment = require("moment-timezone");
+const dateNowWIB = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
 class MessageModel {
     findAll = async (page = 1, limit = 10, userID) => {
         let offset = (page - 1) * limit;
@@ -29,7 +30,7 @@ class MessageModel {
         const userID = data.user_id;
         const destination = data.destination;
         const content = data.content;
-        const created_at = new Date();
+        const created_at = dateNowWIB;
 
         let sql = `INSERT INTO message_temps (user_id, destination, content, created_at) VALUES ($1, $2, $3, $4) RETURNING *`;
         const result = await db.query(sql, [

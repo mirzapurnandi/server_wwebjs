@@ -1,6 +1,8 @@
 const db = require("../config/db/connection");
 const { addMonths } = require("date-fns");
 const uuid = require("uuid");
+const moment = require("moment-timezone");
+const dateNowWIB = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
 
 class providerDetailModel {
     findByID = async (id = 1, license_key = null, join = "") => {
@@ -65,7 +67,7 @@ class providerDetailModel {
         const price = data.price || 0;
         const is_active = data.is_active || false;
         const label = data.label || "";
-        const created_at = new Date();
+        const created_at = dateNowWIB;
         const expired = data.expired || 1;
         const expired_at = addMonths(created_at, expired);
 
@@ -92,7 +94,7 @@ class providerDetailModel {
     };
 
     update = async (id, data, ket = "") => {
-        const updated_at = new Date();
+        const updated_at = dateNowWIB;
 
         let update = "";
         if ("is_active" in data) update += `is_active = ${data.is_active}, `;
