@@ -32,7 +32,8 @@ class providerDetailModel {
         }
 
         let total = `SELECT count(pd.id) as count FROM provider_details as pd WHERE ${where}`;
-        let sql = `SELECT pd.id, pd.provider_id, pd.user_id, pd.license_key, pd.is_active, pd.label, pd.expired_at, pd.created_at, pd.updated_at, p.name, p.code
+        let sql = `SELECT pd.id, pd.provider_id, pd.user_id, pd.license_key, pd.is_active, pd.label, pd.expired_at, 
+                    pd.description, pd.info_hp, pd.created_at, pd.updated_at, p.name, p.code
                     FROM provider_details as pd 
                     left join providers as p ON p.id = pd.provider_id
                     WHERE ${where} 
