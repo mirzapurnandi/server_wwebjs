@@ -1,5 +1,4 @@
 const providerService = require("../../services/provider.service");
-const engineService = require("../../services/engine.service");
 const responseHandler = require("../../utils/responseHandler");
 
 class providerController {
@@ -17,11 +16,7 @@ class providerController {
         try {
             const id = req.params.id;
             const result = await providerService.getDataByID(id);
-            const engine = await engineService.getData(id);
-            return responseHandler.success(res, "Get Detail Providers", {
-                result,
-                engine,
-            });
+            return responseHandler.success(res, "Get Detail Providers", result);
         } catch (error) {
             next(error);
         }
