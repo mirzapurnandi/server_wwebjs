@@ -6,7 +6,10 @@ const worker = new Worker(
     async (job) => {
         if (job.name === "processing_data") {
             const { transaction_id } = job.data;
-            await messageService.processGetSender(transaction_id);
+            const result = await messageService.processGetSender(
+                transaction_id
+            );
+            return result;
         }
     },
     {

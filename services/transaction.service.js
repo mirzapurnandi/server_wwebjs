@@ -16,37 +16,40 @@ class transactionService extends defaultService {
         return getTransaction;
     };
 
-    sendDataTransaction = async (idTransaction, status = "failed") => {
-        const checkTransaction = await this.getDataTransaction(idTransaction);
-        if (checkTransaction) {
-            const checkUserPrivate = await authModel.checkUserPrivate(
-                checkTransaction.user_id,
-                null,
-                "intern"
+    sendDataTransaction = async (idTransaction, status, method, url) => {
+        try {
+            const checkTransaction = await this.getDataTransaction(
+                idTransaction
             );
-            if (
-                checkUserPrivate &&
-                checkUserPrivate.method != null &&
-                checkUserPrivate.url != null
-            ) {
-                await this.sendDataAxios(
-                    checkUserPrivate.method,
-                    checkUserPrivate.url,
-                    {
-                        id_transaction: checkTransaction.id_transaction,
-                        messageid: checkTransaction.messageid,
-                        sender_name: checkTransaction.sender_name,
-                        destination: checkTransaction.destination,
-                        content: checkTransaction.content,
-                        price: checkTransaction.price,
-                        status: status.toUpperCase(),
-                        time_send: checkTransaction.time_send,
-                        time_receive: checkTransaction.time_receive,
-                        time_read: checkTransaction.time_read,
-                        created_at: checkTransaction.created_at,
-                    }
-                );
+            if (!checkTransaction) {
+                throw new Error(`Transaction ${idTransaction} not found`);
             }
+
+            console.log("📤 Sending webhook with data:", {
+                id_transaction: checkTransaction.id_transaction,
+                status,
+                method,
+                url,
+            });
+
+            await this.sendDataAxios(method, url, {
+                id_transaction: checkTransaction.id_transaction,
+                messageid: checkTransaction.messageid,
+                sender_name: checkTransaction.sender_name,
+                destination: checkTransaction.destination,
+                content: checkTransaction.content,
+                price: checkTransaction.price,
+                status: status.toUpperCase(),
+                time_send: checkTransaction.time_send,
+                time_receive: checkTransaction.time_receive,
+                time_read: checkTransaction.time_read,
+                created_at: checkTransaction.created_at,
+            });
+
+            return true;
+        } catch (err) {
+            console.error("❌ sendDataTransaction Error:", err);
+            throw err; // jangan swallow error, biar ketangkap di worker.on("failed")
         }
     };
 
@@ -61,10 +64,23 @@ class transactionService extends defaultService {
             }
 
             logger.info(
-                `Axios Result: ${data.status} [${method.toUpperCase()}] ${url}`
+                `✅ Axios Result: ${
+                    data.status
+                } [${method.toUpperCase()}] ${url}`
             );
         } catch (error) {
-            logger.error(`Axios Error: ${error.message}`);
+            if (error.response) {
+                console.error(
+                    "❌ Axios Response Error:",
+                    error.response.status,
+                    error.response.data
+                );
+            } else if (error.request) {
+                console.error("❌ Axios No Response:", error.request);
+            } else {
+                console.error("❌ Axios Setup Error:", error.message);
+            }
+            throw error; // lempar lagi ke worker biar masuk failed
         }
     };
 }

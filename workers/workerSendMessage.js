@@ -7,11 +7,12 @@ const worker = new Worker(
         if (job.name === "sending_message") {
             const { type, dataTransaction, dataSender, dataDelay } = job.data;
             if (type == "insert") {
-                await messageService.sendMessage(
+                const result = await messageService.sendMessage(
                     dataTransaction,
                     dataSender,
                     dataDelay
                 );
+                return result;
             }
         }
     },

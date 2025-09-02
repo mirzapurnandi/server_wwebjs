@@ -5,6 +5,7 @@ const messageModel = require("../models/message.model");
 const providerDetailModel = require("../models/providerDetail.model");
 const engineService = require("./engine.service");
 const walletService = require("./wallet.service");
+const authModel = require("../models/auth.model");
 const {
     queueInitSender,
     queueSendMessage,
@@ -132,10 +133,12 @@ class messageService extends defaultService {
                             // removeOnComplete: true,
                         }
                     );
+                    return getSender;
                 } else {
                     // kirim notifikasi ke admin dari SLACK
                 }
             }
+            return false;
         } catch (error) {
             console.log(error);
         }
@@ -162,19 +165,37 @@ class messageService extends defaultService {
             );
 
             let statusCode = 0,
+                sendWebhook = false,
                 messageID = null,
                 access = extraData.access || null,
                 messageStatus = extraData.messageStatus || null;
+
+            const checkUserPrivate = await authModel.checkUserPrivate(
+                dataTransaction.user_id,
+                null,
+                "intern"
+            );
+            if (
+                checkUserPrivate &&
+                checkUserPrivate.method != null &&
+                checkUserPrivate.url != null
+            ) {
+                sendWebhook = true;
+            }
 
             if (engineSendMessage.status == 200) {
                 const engine = engineSendMessage.data.data;
                 messageID = engine.id_message;
                 statusCode = 1;
 
-                queueWebhook.add("send_webhook", {
-                    transaction_id: dataTransaction.id_transaction,
-                    status: "success",
-                });
+                if (sendWebhook) {
+                    queueWebhook.add("send_webhook", {
+                        transaction_id: dataTransaction.id_transaction,
+                        status: "success",
+                        method: checkUserPrivate.method,
+                        url: checkUserPrivate.url,
+                    });
+                }
             } else if (engineSendMessage.status == 500) {
                 // Cari Engine Backup
                 const getSender = await routingModel.getSender(
@@ -211,19 +232,27 @@ class messageService extends defaultService {
                     is_active: false,
                 });
 
-                queueWebhook.add("send_webhook", {
-                    transaction_id: dataTransaction.id_transaction,
-                    status: "failed",
-                });
+                if (sendWebhook) {
+                    queueWebhook.add("send_webhook", {
+                        transaction_id: dataTransaction.id_transaction,
+                        status: "failed",
+                        method: checkUserPrivate.method,
+                        url: checkUserPrivate.url,
+                    });
+                }
             }
 
-            await transactionModel.update(dataTransaction.id_transaction, {
-                routingdetail_id: dataSender.routingdetail_id,
-                message_id: messageID,
-                status_code: statusCode,
-                access: access,
-                message_status: messageStatus,
-            });
+            const updateTransaction = await transactionModel.update(
+                dataTransaction.id_transaction,
+                {
+                    routingdetail_id: dataSender.routingdetail_id,
+                    message_id: messageID,
+                    status_code: statusCode,
+                    access: access,
+                    message_status: messageStatus,
+                }
+            );
+            return updateTransaction;
             //*------
         } catch (error) {
             console.log(error);

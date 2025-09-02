@@ -4,12 +4,20 @@ const transactionService = require("../services/transaction.service");
 const worker = new Worker(
     "Webhook",
     async (job) => {
-        if (job.name === "send_webhook") {
-            const { transaction_id, status } = job.data;
-            await transactionService.sendDataTransaction(
-                transaction_id,
-                status
-            );
+        try {
+            if (job.name === "send_webhook") {
+                const { transaction_id, status, method, url } = job.data;
+                await transactionService.sendDataTransaction(
+                    transaction_id,
+                    status,
+                    method,
+                    url
+                );
+                return "done"; // biar ada returnValue
+            }
+        } catch (err) {
+            console.error(`❌ Error in job ${job.id}:`, err);
+            throw err; // penting biar BullMQ detect failed
         }
     },
     {
@@ -20,11 +28,8 @@ const worker = new Worker(
     }
 );
 
-worker.on("completed", async (job, result) => {
-    console.log(`Job ${job.id} completed with result ${result}`);
-    // Menghapus job yang telah selesai dari Redis
-    // await job.remove();
-    // console.log(`Job ${job.id} removed from Redis`);
+worker.on("failed", async (job, err) => {
+    console.error(`❌ Job ${job.id} failed with error:`, err);
 });
 
 console.log("Worker Webhook started!");
