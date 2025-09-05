@@ -72,7 +72,7 @@ class providerDetailController {
         }
 
         try {
-            const detail = await providerDetailModel.find(id);
+            const detail = await providerDetailModel.findByID(id);
             const engineDelete = await engine.deleteData(
                 detail.license_key,
                 detail.provider_id
@@ -80,13 +80,14 @@ class providerDetailController {
 
             const deletes = await providerDetailModel.delete(id);
             if (deletes) {
-                return res.status(200).json({
-                    error: false,
-                    message:
-                        "successfully deleted provider detail & " +
-                        engineDelete,
-                    data: [],
-                });
+                return responseHandler.success(
+                    res,
+                    "successfully deleted provider detail & engine",
+                    {
+                        result: result,
+                        engine: engineDelete,
+                    }
+                );
             }
         } catch (error) {
             return res.status(401).send({
