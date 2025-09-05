@@ -84,7 +84,7 @@ class providerDetailController {
                     res,
                     "successfully deleted provider detail & engine",
                     {
-                        result: result,
+                        result: detail,
                         engine: engineDelete,
                     }
                 );
