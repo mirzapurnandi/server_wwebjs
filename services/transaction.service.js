@@ -1,6 +1,7 @@
 const defaultService = require("./extends/default.service");
 const transactionModel = require("../models/transaction.model");
 const authModel = require("../models/auth.model");
+const https = require("https");
 const axios = require("axios");
 const logger = require("../utils/logger");
 const CustomError = require("../helpers/customError");
@@ -55,10 +56,15 @@ class transactionService extends defaultService {
 
     sendDataAxios = async (method, url, data) => {
         try {
+            const agent = new https.Agent({ family: 4 }); // paksa IPv4
+            const axiosOptions = {
+                headers: { "Content-Type": "application/json" },
+                timeout: 15000, // 15 detik timeout
+                httpsAgent: agent,
+            };
+
             if (method.toUpperCase() === "POST") {
-                await axios.post(url, data, {
-                    headers: { "Content-Type": "application/json" },
-                });
+                await axios.post(url, data, axiosOptions);
             } else if (method.toUpperCase() === "GET") {
                 await axios.get(url, { params: data });
             }

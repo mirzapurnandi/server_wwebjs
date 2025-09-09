@@ -23,11 +23,11 @@ class authService {
             throw new CustomError("Gagal menyimpan data pengguna", 400);
 
         await wallet.insert({ email: data.email, point_balance: 1000 });
-        /* await queue.add(
+        await queue.add(
             "send_email",
             { name: data.name, email: data.email },
             { delay: 1000 }
-        ); */
+        );
         return result;
     };
 
