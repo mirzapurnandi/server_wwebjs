@@ -63,7 +63,11 @@ class messageService extends defaultService {
             const getTransaction = await transactionModel.findByID(
                 transaction_id
             );
-            if (getTransaction && getTransaction.status_code == 0) {
+            if (
+                getTransaction &&
+                (getTransaction.status_code == 0 ||
+                    getTransaction.status_code == 1)
+            ) {
                 const getSender = await routingModel.getSender(
                     getTransaction.user_id,
                     getTransaction.sender_name

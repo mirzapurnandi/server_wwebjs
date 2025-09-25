@@ -16,10 +16,20 @@ class TransactionModel {
         return data.rows[0];
     };
 
-    findAll = async (page = 1, limit = 10) => {
+    findAll = async (
+        page = 1,
+        user_id,
+        sender_name,
+        status_code = "",
+        limit = 50
+    ) => {
         let offset = (page - 1) * limit;
-        let total = `SELECT count(*) as count FROM ${this.table}`;
-        let sql = `SELECT * FROM ${this.table} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
+        let where = `t.user_id = '${user_id}' AND t.sender_name = '${sender_name}'`;
+        if (status_code != "")
+            where += ` AND t.status_code = '${parseInt(status_code)}'`;
+
+        let total = `SELECT count(*) as count FROM ${this.table} t WHERE ${where}`;
+        let sql = `SELECT t.* FROM ${this.table} t WHERE ${where} ORDER BY t.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
         const totalDatas = await db.query(total);
         const totalData = parseInt(totalDatas.rows[0].count);

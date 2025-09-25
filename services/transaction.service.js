@@ -17,6 +17,20 @@ class transactionService extends defaultService {
         return getTransaction;
     };
 
+    getAllData = async (data) => {
+        const result = await transactionModel.findAll(
+            data.page,
+            data.user_id,
+            data.sender_name,
+            data.status_code,
+            data.limit
+        );
+        if (!result) {
+            throw new CustomError("Gagal Query Provider", 400);
+        }
+        return result;
+    };
+
     sendDataTransaction = async (idTransaction, status, method, url) => {
         try {
             const checkTransaction = await this.getDataTransaction(

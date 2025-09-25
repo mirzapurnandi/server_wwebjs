@@ -3,7 +3,8 @@ const StatusTransaction = Object.freeze({
     WAITING: 0,
     SENDING: 1,
     FAILED: 2,
-    SUCCESS: 3,
+    DELIVERED: 3,
+    READ: 4,
 });
 
 module.exports = StatusTransaction;
