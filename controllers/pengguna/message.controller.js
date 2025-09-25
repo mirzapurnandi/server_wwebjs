@@ -39,10 +39,9 @@ class messageController {
             if (!req.file) {
                 return responseHandler.error(res, "File tidak ditemukan", null);
             }
-            const result = await messageService.processUpload(
-                req.file.path,
-                req.user
-            );
+            const result = await messageService.processUpload(req.file.path, {
+                user_id: req.user.id,
+            });
 
             return responseHandler.success(
                 res,
@@ -58,7 +57,7 @@ class messageController {
         try {
             const result = await messageService.processSendBulkMessage(
                 req.body,
-                req.user
+                { user_id: req.user.id }
             );
             return responseHandler.success(
                 res,

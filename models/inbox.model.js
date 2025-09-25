@@ -1,5 +1,4 @@
 const db = require("../config/db/connection");
-const moment = require("moment-timezone");
 
 class InboxModel {
     insert = async (data, licenseKey) => {
@@ -8,9 +7,7 @@ class InboxModel {
         const from = data.from;
         const to = data.to;
         const content = data.content;
-        const created_at = moment()
-            .tz("Asia/Jakarta")
-            .format("YYYY-MM-DD HH:mm:ss");
+        const created_at = new Date();
 
         let sql = `INSERT INTO inboxs (messageid, type, license_key, from_, to_, content, created_at) 
                     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`;

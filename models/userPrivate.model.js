@@ -1,6 +1,5 @@
 const db = require("../config/db/connection");
 const crypto = require("crypto");
-const moment = require("moment-timezone");
 
 // generate passkey random (64 hex chars)
 function generatePasskey() {
@@ -15,9 +14,7 @@ class UserPrivateModel {
      */
     upsert = async (userId, initialCount = 1) => {
         const passkey = generatePasskey();
-        const dateNow = moment()
-            .tz("Asia/Jakarta")
-            .format("YYYY-MM-DD HH:mm:ss");
+        const dateNow = new Date();
         const sql = `INSERT INTO user_privates (user_id, passkey, count, created_at, updated_at)
                     VALUES ($1, $2, $3, $4, $4)
                     ON CONFLICT (user_id)

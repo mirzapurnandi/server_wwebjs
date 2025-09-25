@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
 
 const userController = require("../controllers/admin/user.controller");
 const providerController = require("../controllers/admin/provider.controller");
@@ -7,6 +8,17 @@ const providerDetailController = require("../controllers/admin/providerDetail.co
 const walletController = require("../controllers/admin/wallet.controller");
 const routingController = require("../controllers/admin/routing.controller");
 const messageController = require("../controllers/admin/message.controller");
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, "uploads/"); // pastikan folder ini ada
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + "-" + file.originalname);
+    },
+});
+
+const upload = multer({ storage });
 
 router.get("/user", userController.getAll);
 router.post("/user-private", userController.upsertPrivateUser);
@@ -43,6 +55,13 @@ router.post("/routing/add-engine", routingController.addEngine);
 router.delete("/routing/delete-engine/:id", routingController.deleteEngine);
 
 router.post("/message/send", messageController.sendMessage);
+router.post("/message/list-temp", messageController.getMessageTemp);
+router.post(
+    "/message/upload",
+    upload.single("file"),
+    messageController.uploadFile
+);
+router.post("/message/upload/send", messageController.uploadFileSend);
 
 router.post("/wallet/push", walletController.push);
 router.post("/wallet/pull", walletController.pull);

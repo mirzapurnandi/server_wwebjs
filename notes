@@ -1,0 +1,108 @@
+#!/bin/bash
+set -e
+
+APP_NAME="server"
+APP_DIR="/var/www/$APP_NAME"
+DOMAIN="server.wasend.id"
+PG_USER="mirza"
+PG_PASS="Hanacankaliny03."
+PG_DB="db_wwebjs"
+
+echo "[1/12] Update system..."
+sudo apt update && sudo apt upgrade -y
+
+echo "[2/12] Install basic tools..."
+sudo apt install curl wget git unzip ufw build-essential -y
+
+echo "[3/12] Install Zsh & Oh My Zsh..."
+sudo apt install zsh -y
+chsh -s $(which zsh)
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+sed -i 's/^plugins=(git)$/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' ~/.zshrc
+sed -i 's/^ZSH_THEME=".*"/ZSH_THEME="agnoster"/' ~/.zshrc
+
+echo "[4/12] Install Node.js 22..."
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v
+npm -v
+
+echo "[5/12] Install Bun..."
+curl -fsSL https://bun.sh/install | bash
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+echo 'export BUN_INSTALL="$HOME/.bun"' >> ~/.bashrc
+echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> ~/.bashrc
+bun -v
+
+echo "[6/12] Install PostgreSQL 16..."
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+> /etc/apt/sources.list.d/pgdg.list'
+wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt update
+sudo apt install postgresql-16 postgresql-client-16 -y
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
+
+echo "[7/12] Create PostgreSQL User & DB..."
+sudo -u postgres psql <<EOF
+DO \$\$
+BEGIN
+   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$PG_USER') THEN
+      CREATE ROLE $PG_USER LOGIN PASSWORD '$PG_PASS';
+   END IF;
+END
+\$\$;
+CREATE DATABASE $PG_DB OWNER $PG_USER;
+GRANT ALL PRIVILEGES ON DATABASE $PG_DB TO $PG_USER;
+EOF
+
+echo "[8/12] Install Redis..."
+sudo apt install redis-server -y
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
+
+echo "[9/12] Install PM2..."
+npm install -g pm2
+
+echo "[10/12] Clone Project..."
+sudo mkdir -p $APP_DIR
+sudo chown $USER:$USER $APP_DIR
+cd $APP_DIR
+git clone https://github.com/mirzapurnandi/server_wwebjs.git .
+bun install
+
+echo "[11/12] Setup PM2..."
+pm2 start "bun run start" --name $APP_NAME
+pm2 save
+pm2 startup systemd -u $USER --hp $HOME
+
+echo "[12/12] Setup Nginx + SSL..."
+sudo apt install nginx certbot python3-certbot-nginx -y
+sudo tee /etc/nginx/sites-available/$DOMAIN > /dev/null <<EOL
+server {
+    listen 80;
+    server_name $DOMAIN www.$DOMAIN;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOL
+
+sudo ln -s /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl restart nginx
+
+sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos -m admin@$DOMAIN
+
+echo "=== DONE! ==="
+echo "Domain: https://$DOMAIN"
+echo "Database: $PG_DB (user=$PG_USER, pass=$PG_PASS)"
+

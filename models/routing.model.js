@@ -1,6 +1,5 @@
 const db = require("../config/db/connection");
 const uuid = require("uuid");
-const moment = require("moment-timezone");
 class RoutingModel {
     findAll = async (page, limit, userID = null) => {
         let offset = (page - 1) * limit;
@@ -51,9 +50,11 @@ class RoutingModel {
         let offset = (page - 1) * limit;
         let totalSql = `SELECT count(*) as count FROM routing_details rd WHERE rd.routing_id = '${routingID}'`;
         let dataSql = `SELECT rd.id, rd.routing_id, rd.providerdetail_id, rd.status, rd.uuid, rd.is_backup,
-                        pd.provider_id, pd.license_key, pd.is_active, pd.label, pd.price, pd.expired_at
+                        pd.provider_id, pd.license_key, pd.is_active, pd.label, pd.price, pd.expired_at, pd.description, pd.info_hp,
+                        p.name as provider_name, p.url as provider_url, p.description as provider_description
                         FROM routing_details rd
                         LEFT JOIN provider_details pd ON pd.id = rd.providerdetail_id
+                        JOIN providers p ON p.id = pd.provider_id
                         WHERE rd.routing_id = '${routingID}'
                         ORDER BY rd.updated_at DESC 
                         LIMIT ${limit}
@@ -87,9 +88,7 @@ class RoutingModel {
         const delay = data.delay;
         const price = data.price;
         const price_per_message = data.price_per_message;
-        const created_at = moment()
-            .tz("Asia/Jakarta")
-            .format("YYYY-MM-DD HH:mm:ss");
+        const created_at = new Date();
 
         let sql = `INSERT INTO routings (sender_name, user_id, status, type, delay, price, price_per_message, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8) RETURNING *`;
         const result = await db.query(sql, [

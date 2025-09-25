@@ -1,5 +1,4 @@
 const db = require("../config/db/connection");
-const moment = require("moment-timezone");
 
 class ProviderModel {
     findOne = async (id, checkReady = false) => {
@@ -75,9 +74,7 @@ class ProviderModel {
         const status = data.status || true;
         const total = data.total;
         const description = data.description || "";
-        const created_at = moment()
-            .tz("Asia/Jakarta")
-            .format("YYYY-MM-DD HH:mm:ss");
+        const created_at = new Date();
 
         let sql = `INSERT INTO providers (name, code, method, url, apikey, pwdkey, is_ssl, total, status, description, created_at) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
@@ -100,9 +97,7 @@ class ProviderModel {
     };
 
     update = async (id, datas) => {
-        const updatedAt = moment()
-            .tz("Asia/Jakarta")
-            .format("YYYY-MM-DD HH:mm:ss");
+        const updatedAt = new Date();
 
         const provider = await this.findOne(id);
         if (provider) {

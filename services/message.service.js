@@ -17,7 +17,6 @@ const defaultService = require("./extends/default.service");
 const xlsx = require("xlsx");
 const fs = require("fs");
 const { validateSendMessage } = require("../requests/message.request");
-const moment = require("moment-timezone");
 
 class messageService extends defaultService {
     processSendMessage = async (reqBody, reqData) => {
@@ -72,9 +71,7 @@ class messageService extends defaultService {
 
                 if (getSender) {
                     const secondDelay = parseInt(getSender.delay);
-                    const dateNow = moment()
-                        .tz("Asia/Jakarta")
-                        .format("YYYY-MM-DD HH:mm:ss");
+                    const dateNow = new Date();
                     let dateSave = dateNow;
                     let dataDelay = 200;
                     let checkDataDelay;
@@ -90,10 +87,7 @@ class messageService extends defaultService {
                             dateSave = addSeconds(dateNow, checkDataDelay);
                         }
                     } else {
-                        const usedAt = moment(getSender.used_at).tz(
-                            "Asia/Jakarta"
-                        );
-                        // const usedAt = new Date(getSender.used_at);
+                        const usedAt = new Date(getSender.used_at);
                         const selisih = differenceInSeconds(usedAt, dateNow);
 
                         if (selisih < 0 && selisih + secondDelay <= 0) {
@@ -205,9 +199,7 @@ class messageService extends defaultService {
                     true
                 );
                 if (getSender) {
-                    const dateSave = moment()
-                        .tz("Asia/Jakarta")
-                        .format("YYYY-MM-DD HH:mm:ss");
+                    const dateSave = new Date();
                     await routingDetailModel.updateUsedAt(
                         getSender.routingdetail_id,
                         dateSave,
@@ -259,7 +251,7 @@ class messageService extends defaultService {
         }
     };
 
-    processUpload = async (filePath, reqUser) => {
+    processUpload = async (filePath, reqData) => {
         try {
             const workbook = xlsx.readFile(filePath);
             const sheetName = workbook.SheetNames[0];
@@ -272,7 +264,7 @@ class messageService extends defaultService {
 
             for await (const row of jsonData) {
                 await messageModel.insert({
-                    user_id: reqUser.id,
+                    user_id: reqData.user_id,
                     destination: row.handphone,
                     content: row.message,
                 });
@@ -289,8 +281,8 @@ class messageService extends defaultService {
         }
     };
 
-    processSendBulkMessage = async (reqBody, reqUser) => {
-        const checkTemp = await messageModel.findAll(1, 1000, reqUser.id);
+    processSendBulkMessage = async (reqBody, reqData) => {
+        const checkTemp = await messageModel.findAll(1, 1000, reqData.user_id);
         if (!checkTemp.total === 0) {
             throw new CustomError("Data Kosong", 400);
         }
@@ -318,6 +310,16 @@ class messageService extends defaultService {
         }
 
         return checkTemp;
+    };
+
+    getDataMessageTemps = async (reqBody) => {
+        const messageTemp = await messageModel.findAll(
+            1,
+            1000,
+            reqBody.user_id
+        );
+        if (!messageTemp) throw new CustomError("Data Not Found", 404);
+        return messageTemp;
     };
 }
 

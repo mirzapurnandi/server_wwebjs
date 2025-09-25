@@ -21,6 +21,7 @@ const worker = new Worker(
             host: "localhost",
             port: 6379,
         },
+        concurrency: 20,
     }
 );
 
