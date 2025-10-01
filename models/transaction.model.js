@@ -1,6 +1,7 @@
 const db = require("../config/db/connection");
 const { createUUID } = require("../utils/helper");
 const { toPostgresTimestamp } = require("../helpers/dateHelper");
+const moment = require("moment-timezone");
 class TransactionModel {
     constructor() {
         this.table = "transactions";
@@ -101,7 +102,9 @@ class TransactionModel {
             params,
             status,
             statusCode = "3";
-        const dateNow = new Date();
+        const dateNow = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss.SSS");
         switch (note) {
             case "time_send":
                 status = true;
@@ -152,7 +155,9 @@ class TransactionModel {
     };
 
     updateByField = async (transactionID, datas) => {
-        const updated_at = new Date();
+        const updated_at = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss.SSS");
 
         let update = "";
         if ("routingdetail_id" in datas)

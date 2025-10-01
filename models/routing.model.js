@@ -1,5 +1,6 @@
 const db = require("../config/db/connection");
 const uuid = require("uuid");
+const moment = require("moment-timezone");
 class RoutingModel {
     findAll = async (page, limit, userID = null) => {
         let offset = (page - 1) * limit;
@@ -88,7 +89,9 @@ class RoutingModel {
         const delay = data.delay;
         const price = data.price;
         const price_per_message = data.price_per_message;
-        const created_at = new Date();
+        const created_at = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss.SSS");
 
         let sql = `INSERT INTO routings (sender_name, user_id, status, type, delay, price, price_per_message, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8) RETURNING *`;
         const result = await db.query(sql, [

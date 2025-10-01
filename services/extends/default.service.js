@@ -1,5 +1,6 @@
 const routingModel = require("../../models/routing.model");
 const { differenceInSeconds } = require("date-fns");
+const moment = require("moment-timezone");
 
 class defaultService {
     processSettingDelay = async (getTransaction, dateNow) => {
@@ -14,7 +15,7 @@ class defaultService {
                 parseInt(getSender.delay) / parseInt(getSender.count)
             ).toFixed(2);
 
-            const usedAt = new Date(getSender.used_at);
+            const usedAt = moment(getSender.used_at).tz("Asia/Jakarta");
             let selisih = differenceInSeconds(usedAt, dateNow);
             const result = parseInt(selisih) + parseFloat(secondDelay);
             if (result >= 0) return result;
