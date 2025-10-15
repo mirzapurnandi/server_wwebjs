@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS public.provider_details
     uuid text COLLATE pg_catalog."default" NOT NULL,
     description text NULL,
     info_hp varchar(255) NULL,
+    handphone_id int NULL,
     expired_at timestamp without time zone,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,

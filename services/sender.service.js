@@ -110,7 +110,8 @@ class senderService {
         if (status && status.info != null) {
             let description = `${status.info.pushname} || ${status.info.wid.user}`;
             await providerDetailModel.update(providerDetail.id, {
-                description,
+                description: description,
+                handphone_id: status.info.wid.user,
             });
             providerDetail.description = description;
             providerDetail.label = status.state;

@@ -108,6 +108,8 @@ class providerDetailModel {
         if ("description" in data)
             update += `description = '${data.description}', `;
         if ("info_hp" in data) update += `info_hp = '${data.info_hp}', `;
+        if ("handphone_id" in data)
+            update += `handphone_id = '${data.handphone_id}', `;
         update += `updated_at = $2`;
 
         let where = `id = $1`;
