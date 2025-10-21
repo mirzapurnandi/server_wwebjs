@@ -6,6 +6,7 @@ const providerDetailModel = require("../models/providerDetail.model");
 const engineService = require("./engine.service");
 const walletService = require("./wallet.service");
 const authModel = require("../models/auth.model");
+const handphoneModel = require("../models/handphone.model");
 const {
     queueInitSender,
     queueSendMessage,
@@ -41,11 +42,15 @@ class messageService extends defaultService {
         let price = routing[0].price_per_message;
         await walletService.processing(reqData.email, price);
 
+        let description =
+            routing[0].footer_id == null
+                ? reqBody.content
+                : `${reqBody.content} ${routing[0].content}`;
         const insertTransaction = await transactionModel.insert({
             user_id: reqData.user_id,
             sender_name: reqBody.sender_name,
             destination: reqBody.destination,
-            content: reqBody.content,
+            content: description,
             price: price,
         });
         if (!insertTransaction) {
@@ -200,6 +205,15 @@ class messageService extends defaultService {
                     });
                 }
             } else if (engineSendMessage.status == 500) {
+                statusCode = 2;
+                await providerDetailModel.update(dataSender.id, {
+                    label: "DISCONNECT",
+                    is_active: false,
+                });
+                await handphoneModel.update(dataSender.handphone_id, {
+                    is_recovery: false,
+                });
+
                 // Cari Engine Backup
                 const getSender = await routingModel.getSender(
                     dataTransaction.user_id,
@@ -228,12 +242,6 @@ class messageService extends defaultService {
                         }
                     );
                 }
-
-                statusCode = 2;
-                await providerDetailModel.update(dataSender.id, {
-                    label: "DISCONNECT",
-                    is_active: false,
-                });
 
                 if (sendWebhook) {
                     queueWebhook.add("send_webhook", {
@@ -301,16 +309,21 @@ class messageService extends defaultService {
         const checkSenderName = await routingModel.checkSenderName(
             reqBody.sender_name
         );
-        if (checkSenderName.rows.length == 0) {
+        const routing = checkSenderName.rows;
+        if (routing.length == 0) {
             throw new CustomError("Maaf, Sender tidak ditemukan", 400);
         }
 
         for await (const row of checkTemp.result) {
+            let description =
+                routing[0].footer_id == null
+                    ? row.content
+                    : `${row.content} ${routing[0].content}`;
             const insertTransaction = await transactionModel.insert({
                 user_id: row.user_id,
                 sender_name: reqBody.sender_name,
                 destination: row.destination,
-                content: row.content,
+                content: description,
             });
             if (insertTransaction) {
                 await queueInitSender.add("processing_data", {

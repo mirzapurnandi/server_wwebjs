@@ -118,7 +118,7 @@ class RoutingModel {
         const status = true;
         const sortManipulate = sort === "DESC" ? "ASC" : "DESC";
         let sql = `SELECT pd.id, pd.provider_id, pd.license_key, pd.is_active, pd.label, pd.uuid, pd.price, pd.expired_at, 
-                    rd.id as routingdetail_id, rd.status, rd.created_at, rd.used_at, r.count, r.delay, r.type
+                    pd.handphone_id, rd.id as routingdetail_id, rd.status, rd.created_at, rd.used_at, r.count, r.delay, r.type
                     FROM routing_details rd
                     INNER JOIN routings r ON rd.routing_id = r.id
                     INNER JOIN provider_details pd ON rd.providerdetail_id = pd.id
@@ -137,7 +137,7 @@ class RoutingModel {
     };
 
     checkSenderName = async (sender_name) => {
-        let sql = `SELECT * FROM routings WHERE sender_name = $1`;
+        let sql = `SELECT r.*, f.content FROM routings r LEFT JOIN footers f ON f.id = r.footer_id WHERE sender_name = $1`;
         return await db.query(sql, [sender_name]);
     };
 

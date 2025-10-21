@@ -9,6 +9,7 @@ const walletController = require("../controllers/admin/wallet.controller");
 const routingController = require("../controllers/admin/routing.controller");
 const messageController = require("../controllers/admin/message.controller");
 const transactionController = require("../controllers/admin/transaction.controller");
+const handphoneController = require("../controllers/admin/handphone.controller");
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -70,5 +71,7 @@ router.post("/wallet/pull", walletController.pull);
 router.get("/transaction", transactionController.getAll);
 router.get("/transaction-detail", transactionController.getById);
 router.post("/transaction-trysend", transactionController.trySend);
+
+router.get("/handphone", handphoneController.getAll);
 
 module.exports = router;
