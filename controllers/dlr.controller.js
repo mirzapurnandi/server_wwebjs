@@ -1,6 +1,8 @@
 const providerDetail = require("../models/providerDetail.model");
 const transactionModel = require("../models/transaction.model");
 const inboxModel = require("../models/inbox.model");
+const authModel = require("../models/auth.model");
+const { queueWebhook } = require("../config/queueBullMQ");
 
 class dlrController {
     process = async (req, res) => {
@@ -32,13 +34,57 @@ class dlrController {
                     }
                     break;
                 case "DLR":
+                    const result = await transactionModel.findByMessageID(
+                        data.id
+                    );
+                    let checkUserPrivate,
+                        sendWebhook = false;
+                    if (result) {
+                        checkUserPrivate = await authModel.checkUserPrivate(
+                            result.user_id,
+                            null,
+                            "intern"
+                        );
+                        if (
+                            checkUserPrivate &&
+                            checkUserPrivate.method != null &&
+                            checkUserPrivate.url != null
+                        ) {
+                            sendWebhook = true;
+                        }
+                    }
+
                     let notes;
                     if (data.ack == 1) {
                         notes = "time_send";
+                        if (sendWebhook) {
+                            queueWebhook.add("send_webhook", {
+                                transaction_id: result.id_transaction,
+                                status: "delivered",
+                                method: checkUserPrivate.method,
+                                url: checkUserPrivate.url,
+                            });
+                        }
                     } else if (data.ack == 2) {
                         notes = "time_receive";
+                        if (sendWebhook) {
+                            queueWebhook.add("send_webhook", {
+                                transaction_id: result.id_transaction,
+                                status: "delivered",
+                                method: checkUserPrivate.method,
+                                url: checkUserPrivate.url,
+                            });
+                        }
                     } else if (data.ack == 3) {
                         notes = "time_read";
+                        if (sendWebhook) {
+                            queueWebhook.add("send_webhook", {
+                                transaction_id: result.id_transaction,
+                                status: "read",
+                                method: checkUserPrivate.method,
+                                url: checkUserPrivate.url,
+                            });
+                        }
                     }
                     await transactionModel.updateDate(
                         { message_id: data.id, license_key: id_instance },

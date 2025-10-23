@@ -199,7 +199,7 @@ class messageService extends defaultService {
                 if (sendWebhook) {
                     queueWebhook.add("send_webhook", {
                         transaction_id: dataTransaction.id_transaction,
-                        status: "success",
+                        status: "sent",
                         method: checkUserPrivate.method,
                         url: checkUserPrivate.url,
                     });

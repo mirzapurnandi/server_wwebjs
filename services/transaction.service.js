@@ -54,7 +54,7 @@ class transactionService extends defaultService {
                 destination: checkTransaction.destination,
                 content: checkTransaction.content,
                 price: checkTransaction.price,
-                status: status.toUpperCase(),
+                status: status,
                 time_send: checkTransaction.time_send,
                 time_receive: checkTransaction.time_receive,
                 time_read: checkTransaction.time_read,

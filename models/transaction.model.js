@@ -17,6 +17,15 @@ class TransactionModel {
         return data.rows[0];
     };
 
+    findByMessageID = async (messageid) => {
+        let sql = `SELECT * FROM ${this.table} as t 
+                    WHERE t.messageid = $1
+                    ORDER BY t.created_at DESC LIMIT 1`;
+        const data = await db.query(sql, [messageid]);
+        if (data.rows.length === 0) return null;
+        return data.rows[0];
+    };
+
     findAll = async (
         page = 1,
         user_id,
