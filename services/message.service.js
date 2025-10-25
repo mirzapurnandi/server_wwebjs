@@ -17,12 +17,19 @@ const { addSeconds, differenceInSeconds } = require("date-fns");
 const defaultService = require("./extends/default.service");
 const xlsx = require("xlsx");
 const fs = require("fs");
-const { validateSendMessage } = require("../requests/message.request");
+const {
+    validateSendMessage,
+    validateSendMessageMedia,
+} = require("../requests/message.request");
 const moment = require("moment-timezone");
 
 class messageService extends defaultService {
-    processSendMessage = async (reqBody, reqData) => {
-        await validateSendMessage(reqBody);
+    processSendMessage = async (reqBody, reqData, type = "text") => {
+        if (type == "media") {
+            await validateSendMessageMedia(reqBody);
+        } else {
+            await validateSendMessage(reqBody);
+        }
         const checkSenderName = await routingModel.checkSenderName(
             reqBody.sender_name
         );
@@ -51,6 +58,7 @@ class messageService extends defaultService {
             sender_name: reqBody.sender_name,
             destination: reqBody.destination,
             content: description,
+            image: reqBody.file_url ?? null,
             price: price,
         });
         if (!insertTransaction) {
@@ -164,13 +172,25 @@ class messageService extends defaultService {
             return false;
         }
         try {
-            const engineSendMessage = await engineService.sendMessage(
-                dataSender.license_key,
-                dataTransaction.destination,
-                dataTransaction.content,
-                dataDelay,
-                "typing"
-            );
+            let engineSendMessage;
+            if (dataTransaction.image == null) {
+                engineSendMessage = await engineService.sendMessage(
+                    dataSender.license_key,
+                    dataTransaction.destination,
+                    dataTransaction.content,
+                    dataDelay,
+                    "typing"
+                );
+            } else {
+                engineSendMessage = await engineService.sendMessageMedia(
+                    dataSender.license_key,
+                    dataTransaction.destination,
+                    dataTransaction.content,
+                    dataTransaction.image,
+                    dataDelay,
+                    "typing"
+                );
+            }
 
             let statusCode = 0,
                 sendWebhook = false,

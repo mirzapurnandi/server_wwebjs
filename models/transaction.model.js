@@ -66,16 +66,18 @@ class TransactionModel {
         const sender_name = datas.sender_name;
         const destination = datas.destination;
         const content = datas.content;
+        const image = datas.image ?? null;
         const price = datas.price ?? 0;
         const status_code = datas.status_code ?? 0;
 
-        let sql = `INSERT INTO ${this.table} (id_transaction, user_id, sender_name, destination, content, price, status_code) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`;
+        let sql = `INSERT INTO ${this.table} (id_transaction, user_id, sender_name, destination, content, image, price, status_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`;
         const data = await db.query(sql, [
             id_transaction,
             user_id,
             sender_name,
             destination,
             content,
+            image,
             price,
             status_code,
         ]);

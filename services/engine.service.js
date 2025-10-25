@@ -265,6 +265,52 @@ class engineService {
             };
         }
     };
+
+    sendMessageMedia = async (
+        id_instance,
+        destination,
+        message,
+        file_url,
+        delay,
+        type = null
+    ) => {
+        try {
+            const getProvider = await providerDetailModel.findByID(
+                1,
+                id_instance,
+                "providers"
+            );
+            const uri =
+                type === "typing" ? "/send-media-typing" : "/send-media";
+            const result = await axios.post(
+                getProvider.url + uri,
+                {
+                    id_instance: id_instance,
+                    destination: destination,
+                    message: message,
+                    file_url: file_url,
+                    delay: delay,
+                },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-purnand-token": getProvider.apikey,
+                    },
+                }
+            );
+            logger.info("Axios Result: ", result.data);
+            return {
+                status: result.status,
+                data: result.data,
+            };
+        } catch (error) {
+            logger.error(`Axios Catch Error: ${error.message}`);
+            return {
+                status: error.status,
+                message: error.message,
+            };
+        }
+    };
 }
 
 module.exports = new engineService();

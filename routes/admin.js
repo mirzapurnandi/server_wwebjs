@@ -57,6 +57,7 @@ router.post("/routing/add-engine", routingController.addEngine);
 router.delete("/routing/delete-engine/:id", routingController.deleteEngine);
 
 router.post("/message/send", messageController.sendMessage);
+router.post("/message/send-media", messageController.sendMessageMedia);
 router.post("/message/list-temp", messageController.getMessageTemp);
 router.post(
     "/message/upload",

@@ -22,6 +22,30 @@ const validateSendMessage = async (data) => {
     });
 };
 
+const validateSendMessageMedia = async (data) => {
+    const validationRule = {
+        sender_name: "required",
+        destination: "required",
+        file_url: "required|url",
+        content: "required",
+    };
+    const validationMessage = {
+        required: ":attribute harus diisi",
+        url: ":attribute harus berupa URL",
+    };
+
+    return new Promise((resolve, reject) => {
+        validator(data, validationRule, validationMessage, (err, status) => {
+            if (!status)
+                return reject(
+                    new CustomError("Validation failed", 422, err.errors)
+                );
+            resolve();
+        });
+    });
+};
+
 module.exports = {
     validateSendMessage,
+    validateSendMessageMedia,
 };

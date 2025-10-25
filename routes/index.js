@@ -48,6 +48,21 @@ router.get("/", (req, res) => {
     });
 });
 
+router.post("/webhook", (req, res) => {
+    console.log("webhook-post", req.body);
+    res.status(200).send({
+        message: "Welcome POST",
+        body: req.body,
+    });
+});
+router.get("/webhook", (req, res) => {
+    console.log("webhook-get", req.params);
+    res.status(200).send({
+        message: "Welcome GET",
+        body: req.params,
+    });
+});
+
 router.post("/api/register", registrasi);
 router.post("/api/login", login);
 router.post("/api/refresh", refresh);

@@ -19,6 +19,27 @@ class messageController {
         }
     };
 
+    sendMessageMedia = async (req, res, next) => {
+        try {
+            const result = await messageService.processSendMessage(
+                req.body,
+                {
+                    user_id: req.body.user_id,
+                    email: req.user.email,
+                },
+                "media"
+            );
+            return responseHandler.success(
+                res,
+                "successfully Send Message",
+                result
+            );
+        } catch (error) {
+            console.log(error);
+            next(error);
+        }
+    };
+
     sendMessageBack = async (req, res, next) => {
         try {
             const result = await messageService.sendMessage(
