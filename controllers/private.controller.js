@@ -6,16 +6,22 @@ const statusTransaction = require("../enums/statusTransaction");
 class privateController {
     sendMessage = async (req, res, next) => {
         try {
-            const result = await messageService.processSendMessage(req.body, {
-                user_id: req.user.id,
-                email: req.user.email,
-            });
+            const typeMedia = req.body.file_url ? "media" : "text";
+            const result = await messageService.processSendMessage(
+                req.body,
+                {
+                    user_id: req.user.id,
+                    email: req.user.email,
+                },
+                typeMedia
+            );
             return responseHandler.success(res, "successfully Send Message", {
                 id_transaction: result.id_transaction,
                 messageid: result.messageid,
                 sender_name: result.sender_name,
                 destination: result.destination,
                 content: result.content,
+                image: result.image,
                 price: result.price,
                 status: Object.keys(statusTransaction).find(
                     (key) =>
@@ -48,6 +54,7 @@ class privateController {
                     sender_name: result.sender_name,
                     destination: result.destination,
                     content: result.content,
+                    image: result.image,
                     price: result.price,
                     status: Object.keys(statusTransaction).find(
                         (key) =>
