@@ -20,7 +20,7 @@ class routingController {
     getAll = async (req, res, next) => {
         try {
             const page = req.query.page || 1;
-            const limit = req.query.limit || 25;
+            const limit = req.query.limit || 50;
             const result = await routingService.getAllData(
                 parseInt(page),
                 parseInt(limit),
