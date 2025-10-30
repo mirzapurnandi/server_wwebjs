@@ -72,6 +72,7 @@ router.post("/wallet/pull", walletController.pull);
 router.get("/transaction", transactionController.getAll);
 router.get("/transaction-detail", transactionController.getById);
 router.post("/transaction-trysend", transactionController.trySend);
+router.get("/transaction-filter", transactionController.getAllByFilter);
 
 router.get("/handphone", handphoneController.getAll);
 

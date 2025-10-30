@@ -82,6 +82,30 @@ class transactionController {
             next(error);
         }
     };
+
+    getAllByFilter = async (req, res, next) => {
+        try {
+            const statusCode = req.query.status_code;
+            const date = req.query.date;
+            const senderName = req.query.sender_name;
+            const limit = req.query.limit || 25;
+
+            const result = await transactionService.filterDataTransaction({
+                date: date,
+                sender_name: senderName,
+                status_code: statusCode,
+                limit: parseInt(limit),
+            });
+
+            return responseHandler.success(
+                res,
+                "successfully show All Transaction by Filter",
+                result
+            );
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 module.exports = new transactionController();

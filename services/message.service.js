@@ -24,7 +24,12 @@ const {
 const moment = require("moment-timezone");
 
 class messageService extends defaultService {
-    processSendMessage = async (reqBody, reqData, type = "text") => {
+    processSendMessage = async (
+        reqBody,
+        reqData,
+        type = "text",
+        privated = null
+    ) => {
         if (type == "media") {
             await validateSendMessageMedia(reqBody);
         } else {
@@ -65,9 +70,11 @@ class messageService extends defaultService {
             throw new CustomError("Maaf, Transaksi gagal di input", 400);
         }
 
-        queueInitSender.add("processing_data", {
-            transaction_id: insertTransaction.id_transaction,
-        });
+        if (privated === null) {
+            queueInitSender.add("processing_data", {
+                transaction_id: insertTransaction.id_transaction,
+            });
+        }
 
         return insertTransaction;
     };
@@ -89,6 +96,7 @@ class messageService extends defaultService {
 
                 if (getSender) {
                     const secondDelay = parseInt(getSender.delay);
+                    const secondDelayMax = parseInt(getSender.delay_max);
                     const dateNow = moment()
                         .tz("Asia/Jakarta")
                         .format("YYYY-MM-DD HH:mm:ss.SSS");
@@ -112,7 +120,7 @@ class messageService extends defaultService {
                         );
                         const selisih = differenceInSeconds(usedAt, dateNow);
 
-                        if (selisih < 0 && selisih + secondDelay <= 0) {
+                        if (selisih < 0 && selisih + secondDelayMax <= 0) {
                             checkDataDelay = await this.processSettingDelay(
                                 getTransaction,
                                 dateNow
@@ -123,8 +131,8 @@ class messageService extends defaultService {
                                 dateSave = addSeconds(dateNow, checkDataDelay);
                             }
                         } else {
-                            const totalDelay = selisih + secondDelay;
-                            dateSave = addSeconds(usedAt, secondDelay);
+                            const totalDelay = selisih + secondDelayMax;
+                            dateSave = addSeconds(usedAt, secondDelayMax);
                             dataDelay = totalDelay * 1000;
                         }
                     }
@@ -173,11 +181,14 @@ class messageService extends defaultService {
         }
         try {
             let engineSendMessage;
+            const finalContent = await this.obfuscateLinks(
+                dataTransaction.content
+            );
             if (dataTransaction.image == null) {
                 engineSendMessage = await engineService.sendMessage(
                     dataSender.license_key,
                     dataTransaction.destination,
-                    dataTransaction.content,
+                    finalContent,
                     dataDelay,
                     "typing"
                 );
@@ -185,7 +196,7 @@ class messageService extends defaultService {
                 engineSendMessage = await engineService.sendMessageMedia(
                     dataSender.license_key,
                     dataTransaction.destination,
-                    dataTransaction.content,
+                    finalContent,
                     dataTransaction.image,
                     dataDelay,
                     "typing"
@@ -225,15 +236,6 @@ class messageService extends defaultService {
                     });
                 }
             } else if (engineSendMessage.status == 500) {
-                statusCode = 2;
-                await providerDetailModel.update(dataSender.id, {
-                    label: "DISCONNECT",
-                    is_active: false,
-                });
-                await handphoneModel.update(dataSender.handphone_id, {
-                    is_recovery: false,
-                });
-
                 // Cari Engine Backup
                 const getSender = await routingModel.getSender(
                     dataTransaction.user_id,
@@ -263,6 +265,15 @@ class messageService extends defaultService {
                     );
                 }
 
+                statusCode = 2;
+                await providerDetailModel.update(dataSender.id, {
+                    label: "DISCONNECT",
+                    is_active: false,
+                });
+                await handphoneModel.update(dataSender.handphone_id, {
+                    is_recovery: false,
+                });
+
                 if (sendWebhook) {
                     queueWebhook.add("send_webhook", {
                         transaction_id: dataTransaction.id_transaction,
@@ -288,6 +299,20 @@ class messageService extends defaultService {
         } catch (error) {
             console.log(error);
         }
+    };
+
+    obfuscateLinks = async (message) => {
+        return message.replace(
+            /\b(https?:\/\/)?((?:[\w-]+\.)+[a-z]{2,})(\/[^\s]*)?/gi,
+            (match, protocol, domain, path) => {
+                // ubah titik di domain menjadi '*'
+                const obfuscatedDomain = domain.replace(/\./g, "*");
+                // jika ada protocol, ubah menjadi tanpa 'http' agar lebih aman
+                const proto = protocol ? "" : "";
+                // gabungkan kembali tanpa mengubah path
+                return `${proto}${obfuscatedDomain}${path || ""}`;
+            }
+        );
     };
 
     processUpload = async (filePath, reqData) => {

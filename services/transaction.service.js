@@ -5,6 +5,7 @@ const https = require("https");
 const axios = require("axios");
 const logger = require("../utils/logger");
 const CustomError = require("../helpers/customError");
+const { queueInitSender } = require("../config/queueBullMQ");
 
 class transactionService extends defaultService {
     getDataTransaction = async (idTransaction, userID) => {
@@ -29,6 +30,24 @@ class transactionService extends defaultService {
             throw new CustomError("Gagal Query Provider", 400);
         }
         return result;
+    };
+
+    filterDataTransaction = async (reqBody) => {
+        const getTransaction = await transactionModel.findByDate(
+            reqBody.status_code,
+            reqBody.date,
+            reqBody.sender_name,
+            reqBody.limit
+        );
+        if (!getTransaction) throw new CustomError("Data Not Found", 404);
+
+        for await (const row of getTransaction) {
+            queueInitSender.add("processing_data", {
+                transaction_id: row.id_transaction,
+            });
+        }
+
+        return getTransaction;
     };
 
     sendDataTransaction = async (idTransaction, status, method, url) => {

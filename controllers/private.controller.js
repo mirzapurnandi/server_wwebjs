@@ -13,7 +13,8 @@ class privateController {
                     user_id: req.user.id,
                     email: req.user.email,
                 },
-                typeMedia
+                typeMedia,
+                "privated"
             );
             return responseHandler.success(res, "successfully Send Message", {
                 id_transaction: result.id_transaction,

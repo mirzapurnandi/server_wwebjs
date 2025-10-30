@@ -69,8 +69,11 @@ class TransactionModel {
         const image = datas.image ?? null;
         const price = datas.price ?? 0;
         const status_code = datas.status_code ?? 0;
+        const created_at = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss.SSS");
 
-        let sql = `INSERT INTO ${this.table} (id_transaction, user_id, sender_name, destination, content, image, price, status_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`;
+        let sql = `INSERT INTO ${this.table} (id_transaction, user_id, sender_name, destination, content, image, price, status_code, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`;
         const data = await db.query(sql, [
             id_transaction,
             user_id,
@@ -80,6 +83,7 @@ class TransactionModel {
             image,
             price,
             status_code,
+            created_at,
         ]);
 
         if (data.rows.length === 0) return null;
@@ -206,6 +210,15 @@ class TransactionModel {
 
         if (data.rows.length === 0) return null;
         return data.rows[0];
+    };
+
+    findByDate = async (statusCode = 0, date, senderName, limit = 25) => {
+        let sql = `SELECT * FROM ${this.table} as t 
+                    WHERE t.status_code = $1 AND t.sender_name = $2 AND t.created_at >= $3
+                    ORDER BY t.created_at ASC LIMIT $4`;
+        const data = await db.query(sql, [statusCode, senderName, date, limit]);
+        if (data.rows.length === 0) return null;
+        return data.rows;
     };
 
     /*updateDLR = async (licenseKey, messageID) => {
