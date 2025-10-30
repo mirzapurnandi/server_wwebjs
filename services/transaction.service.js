@@ -6,6 +6,7 @@ const axios = require("axios");
 const logger = require("../utils/logger");
 const CustomError = require("../helpers/customError");
 const { queueInitSender } = require("../config/queueBullMQ");
+const routingModel = require("../models/routing.model");
 
 class transactionService extends defaultService {
     getDataTransaction = async (idTransaction, userID) => {
@@ -41,10 +42,16 @@ class transactionService extends defaultService {
         );
         if (!getTransaction) throw new CustomError("Data Not Found", 404);
 
-        for await (const row of getTransaction) {
-            queueInitSender.add("processing_data", {
-                transaction_id: row.id_transaction,
+        if (reqBody.type == "send") {
+            const delayMax = Math.floor(Math.random() * (340 - 260 + 1)) + 260;
+            await routingModel.update(reqBody.sender_name, {
+                delay_max: delayMax,
             });
+            for await (const row of getTransaction) {
+                queueInitSender.add("processing_data", {
+                    transaction_id: row.id_transaction,
+                });
+            }
         }
 
         return getTransaction;

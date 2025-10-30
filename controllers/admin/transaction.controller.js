@@ -89,12 +89,14 @@ class transactionController {
             const date = req.query.date;
             const senderName = req.query.sender_name;
             const limit = req.query.limit || 25;
+            const type = req.query.type || null;
 
             const result = await transactionService.filterDataTransaction({
                 date: date,
                 sender_name: senderName,
                 status_code: statusCode,
                 limit: parseInt(limit),
+                type: type,
             });
 
             return responseHandler.success(

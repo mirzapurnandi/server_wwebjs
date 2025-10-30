@@ -109,6 +109,24 @@ class RoutingModel {
         return result.rows[0];
     };
 
+    update = async (sender_name, data) => {
+        const updated_at = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss.SSS");
+
+        let update = "";
+        if ("status" in data) update += `status = ${data.status}, `;
+        if ("type" in data) update += `type = '${data.type}', `;
+        if ("delay" in data) update += `delay = ${data.delay}, `;
+        if ("price" in data) update += `price = ${data.price}, `;
+        if ("delay_max" in data) update += `delay_max = ${data.delay_max}, `;
+        if ("footer_id" in data) update += `footer_id = '${data.footer_id}', `;
+        update += `updated_at = $2`;
+
+        let sql = `UPDATE routings SET ${update} WHERE sender_name = $1 RETURNING *`;
+        return await db.query(sql, [sender_name, updated_at]);
+    };
+
     delete = async (providerdetail_id, user_id) => {
         let sql = `DELETE FROM routings WHERE providerdetail_id='${providerdetail_id}' AND user_id='${user_id}'`;
         return await db.query(sql);
