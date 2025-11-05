@@ -176,7 +176,7 @@ class TransactionModel {
 
         let update = "";
         if ("routingdetail_id" in datas)
-            update += `routingdetail_id = '${datas.routingdetail_id}', `;
+            update += `routingdetail_id = ${datas.routingdetail_id}, `;
         if ("sender_name" in datas)
             update += `sender_name = '${datas.sender_name}', `;
         if ("access" in datas) update += `access = '${datas.access}', `;
@@ -200,9 +200,7 @@ class TransactionModel {
         if ("optional_id" in datas)
             update += `optional_id = '${datas.optional_id}', `;
         if ("created_at" in datas)
-            update += `created_at = '${toPostgresTimestamp(
-                datas.created_at
-            )}', `;
+            update += `created_at = '${datas.created_at}', `;
         update += `updated_at = $2`;
 
         let sql = `UPDATE ${this.table} SET ${update} WHERE id_transaction = $1 RETURNING *`;

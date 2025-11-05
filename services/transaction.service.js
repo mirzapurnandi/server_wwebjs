@@ -5,8 +5,10 @@ const https = require("https");
 const axios = require("axios");
 const logger = require("../utils/logger");
 const CustomError = require("../helpers/customError");
-const { queueInitSender } = require("../config/queueBullMQ");
+const { queueInitSender, queueWebhook } = require("../config/queueBullMQ");
 const routingModel = require("../models/routing.model");
+const crypto = require("crypto");
+const moment = require("moment-timezone");
 
 class transactionService extends defaultService {
     getDataTransaction = async (idTransaction, userID) => {
@@ -42,6 +44,26 @@ class transactionService extends defaultService {
         );
         if (!getTransaction) throw new CustomError("Data Not Found", 404);
 
+        let checkUserPrivate,
+            messageStatus = "",
+            sendWebhook = false,
+            totalSending = 0;
+        let getOneTransaction = getTransaction[0].user_id;
+
+        checkUserPrivate = await authModel.checkUserPrivate(
+            getOneTransaction,
+            null,
+            "intern"
+        );
+
+        if (
+            checkUserPrivate &&
+            checkUserPrivate.method != null &&
+            checkUserPrivate.url != null
+        ) {
+            sendWebhook = true;
+        }
+
         if (reqBody.type == "send") {
             const delayMax = Math.floor(Math.random() * (340 - 260 + 1)) + 260;
             await routingModel.update(reqBody.sender_name, {
@@ -52,9 +74,140 @@ class transactionService extends defaultService {
                     transaction_id: row.id_transaction,
                 });
             }
+        } else if (reqBody.type == "change_1" && reqBody.status_code == 0) {
+            for await (const row of getTransaction) {
+                let dateNow = moment()
+                    .tz("Asia/Jakarta")
+                    .format("YYYY-MM-DD HH:mm:ss.SSS");
+                let messageID = row.messageid;
+                let routingdetailID = row.routingdetail_id;
+                if (row.messageid === null) {
+                    messageID = crypto
+                        .randomBytes(11)
+                        .toString("hex")
+                        .toUpperCase();
+                    messageStatus = "CRACK";
+                    routingdetailID = null;
+                }
+
+                await transactionModel.updateByField(row.id_transaction, {
+                    routingdetail_id: routingdetailID,
+                    status_code: 1,
+                    messageid: messageID,
+                    message_status: messageStatus,
+                    time_send: dateNow,
+                    // created_at: dateNow,
+                });
+
+                if (sendWebhook) {
+                    queueWebhook.add("send_webhook", {
+                        transaction_id: row.id_transaction,
+                        status: "sent",
+                        method: checkUserPrivate.method,
+                        url: checkUserPrivate.url,
+                    });
+                    totalSending++;
+                }
+            }
+        } else if (reqBody.type == "change_2" && reqBody.status_code == 0) {
+            for await (const row of getTransaction) {
+                messageStatus = "CRACK";
+                await transactionModel.updateByField(row.id_transaction, {
+                    status_code: 2,
+                    message_status: messageStatus,
+                });
+
+                if (sendWebhook) {
+                    queueWebhook.add("send_webhook", {
+                        transaction_id: row.id_transaction,
+                        status: "failed",
+                        method: checkUserPrivate.method,
+                        url: checkUserPrivate.url,
+                    });
+                    totalSending++;
+                }
+            }
+        } else if (
+            reqBody.type == "change_3" &&
+            (reqBody.status_code == 0 || reqBody.status_code == 1)
+        ) {
+            for await (const row of getTransaction) {
+                let dateNow = moment()
+                    .tz("Asia/Jakarta")
+                    .format("YYYY-MM-DD HH:mm:ss.SSS");
+                let messageID = row.messageid;
+                let routingdetailID = row.routingdetail_id;
+                messageStatus = "CRACK";
+                if (row.messageid === null) {
+                    messageID = crypto
+                        .randomBytes(11)
+                        .toString("hex")
+                        .toUpperCase();
+                    routingdetailID = null;
+                }
+
+                await transactionModel.updateByField(row.id_transaction, {
+                    routingdetail_id: routingdetailID,
+                    status_code: 3,
+                    messageid: messageID,
+                    message_status: messageStatus,
+                    time_receive: dateNow,
+                });
+
+                if (sendWebhook) {
+                    queueWebhook.add("send_webhook", {
+                        transaction_id: row.id_transaction,
+                        status: "delivered",
+                        method: checkUserPrivate.method,
+                        url: checkUserPrivate.url,
+                    });
+                    totalSending++;
+                }
+            }
+        } else if (
+            reqBody.type == "change_4" &&
+            (reqBody.status_code == 1 || reqBody.status_code == 3)
+        ) {
+            for await (const row of getTransaction) {
+                let dateNow = moment()
+                    .tz("Asia/Jakarta")
+                    .format("YYYY-MM-DD HH:mm:ss.SSS");
+                let messageID = row.messageid;
+                let routingdetailID = row.routingdetail_id;
+                messageStatus = "CRACK";
+                if (row.messageid === null) {
+                    messageID = crypto
+                        .randomBytes(11)
+                        .toString("hex")
+                        .toUpperCase();
+                    routingdetailID = null;
+                }
+
+                await transactionModel.updateByField(row.id_transaction, {
+                    routingdetail_id: routingdetailID,
+                    status_code: 4,
+                    messageid: messageID,
+                    message_status: messageStatus,
+                    time_read: dateNow,
+                });
+
+                if (sendWebhook) {
+                    queueWebhook.add("send_webhook", {
+                        transaction_id: row.id_transaction,
+                        status: "read",
+                        method: checkUserPrivate.method,
+                        url: checkUserPrivate.url,
+                    });
+                    totalSending++;
+                }
+            }
         }
 
-        return getTransaction;
+        return {
+            total: getTransaction.length,
+            sending: totalSending,
+            data: getTransaction,
+        };
     };
 
     sendDataTransaction = async (idTransaction, status, method, url) => {

@@ -10,8 +10,9 @@ function toPostgresTimestamp(dateInput = new Date()) {
     const HH = pad(localDate.getUTCHours());
     const mm = pad(localDate.getUTCMinutes());
     const ss = pad(localDate.getUTCSeconds());
+    const SSS = pad(localDate.getUTCMilliseconds());
 
-    return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
+    return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}.${SSS}`;
 }
 
 module.exports = { toPostgresTimestamp };
