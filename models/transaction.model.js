@@ -210,9 +210,17 @@ class TransactionModel {
         return data.rows[0];
     };
 
-    findByDate = async (statusCode = 0, date, senderName, limit = 25) => {
+    findByDate = async (
+        statusCode = 0,
+        date,
+        senderName,
+        limit = 25,
+        whereCrack = ""
+    ) => {
+        let sqlCrack = "";
+        if (whereCrack == "crack") sqlCrack = ` AND t.message_status = 'CRACK'`;
         let sql = `SELECT * FROM ${this.table} as t 
-                    WHERE t.status_code = $1 AND t.sender_name = $2 AND t.created_at >= $3
+                    WHERE t.status_code = $1 AND t.sender_name = $2 AND t.created_at >= $3 ${sqlCrack}
                     ORDER BY t.created_at ASC LIMIT $4`;
         const data = await db.query(sql, [statusCode, senderName, date, limit]);
         if (data.rows.length === 0) return null;

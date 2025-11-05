@@ -40,7 +40,8 @@ class transactionService extends defaultService {
             reqBody.status_code,
             reqBody.date,
             reqBody.sender_name,
-            reqBody.limit
+            reqBody.limit,
+            reqBody.crack
         );
         if (!getTransaction) throw new CustomError("Data Not Found", 404);
 
