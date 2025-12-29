@@ -7,6 +7,8 @@ class privateController {
     sendMessage = async (req, res, next) => {
         try {
             const typeMedia = req.body.file_url ? "media" : "text";
+            const privated =
+                req.body.sender_name == "cakratekno_otp" ? null : "privated";
             const result = await messageService.processSendMessage(
                 req.body,
                 {
@@ -14,7 +16,7 @@ class privateController {
                     email: req.user.email,
                 },
                 typeMedia,
-                "privated"
+                privated
             );
             return responseHandler.success(res, "successfully Send Message", {
                 id_transaction: result.id_transaction,
