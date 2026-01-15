@@ -35,7 +35,7 @@ class routingController {
     getById = async (req, res, next) => {
         try {
             const page = req.query.page || 1;
-            const limit = req.query.limit || 50;
+            const limit = req.query.limit || 200;
             const userID = req.query.user_id;
             const id = req.params.id;
             const resultData = await routingService.getDataByID(id, userID);
