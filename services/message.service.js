@@ -189,7 +189,8 @@ class messageService extends defaultService {
                     dataSender.license_key,
                     dataTransaction.destination,
                     finalContent,
-                    dataDelay
+                    dataDelay,
+                    "typing"
                 );
             } else {
                 engineSendMessage = await engineService.sendMessageMedia(
