@@ -28,7 +28,7 @@ class messageService extends defaultService {
         reqBody,
         reqData,
         type = "text",
-        privated = null
+        privated = null,
     ) => {
         if (type == "media") {
             await validateSendMessageMedia(reqBody);
@@ -36,7 +36,7 @@ class messageService extends defaultService {
             await validateSendMessage(reqBody);
         }
         const checkSenderName = await routingModel.checkSenderName(
-            reqBody.sender_name
+            reqBody.sender_name,
         );
         const routing = checkSenderName.rows;
         if (routing.length == 0) {
@@ -45,7 +45,7 @@ class messageService extends defaultService {
 
         const checkSender = await routingModel.getSender(
             reqData.user_id,
-            reqBody.sender_name
+            reqBody.sender_name,
         );
         if (!checkSender) {
             throw new CustomError("Maaf, Engine tidak ada yang Aktif", 400);
@@ -81,9 +81,8 @@ class messageService extends defaultService {
 
     processGetSender = async (transaction_id) => {
         try {
-            const getTransaction = await transactionModel.findByID(
-                transaction_id
-            );
+            const getTransaction =
+                await transactionModel.findByID(transaction_id);
             if (
                 getTransaction &&
                 (getTransaction.status_code == 0 ||
@@ -91,7 +90,7 @@ class messageService extends defaultService {
             ) {
                 const getSender = await routingModel.getSender(
                     getTransaction.user_id,
-                    getTransaction.sender_name
+                    getTransaction.sender_name,
                 );
 
                 if (getSender) {
@@ -107,7 +106,7 @@ class messageService extends defaultService {
                     if (getSender.used_at === null) {
                         checkDataDelay = await this.processSettingDelay(
                             getTransaction,
-                            dateNow
+                            dateNow,
                         );
 
                         if (checkDataDelay !== null) {
@@ -116,14 +115,14 @@ class messageService extends defaultService {
                         }
                     } else {
                         const usedAt = moment(getSender.used_at).tz(
-                            "Asia/Jakarta"
+                            "Asia/Jakarta",
                         );
                         const selisih = differenceInSeconds(usedAt, dateNow);
 
                         if (selisih < 0 && selisih + secondDelayMax <= 0) {
                             checkDataDelay = await this.processSettingDelay(
                                 getTransaction,
-                                dateNow
+                                dateNow,
                             );
 
                             if (checkDataDelay !== null) {
@@ -140,7 +139,7 @@ class messageService extends defaultService {
                     await routingDetailModel.updateUsedAt(
                         getSender.routingdetail_id,
                         dateSave,
-                        getTransaction.id_transaction
+                        getTransaction.id_transaction,
                     );
 
                     // send to queue
@@ -155,7 +154,7 @@ class messageService extends defaultService {
                         {
                             delay: dataDelay,
                             // removeOnComplete: true,
-                        }
+                        },
                     );
                     return getSender;
                 } else {
@@ -173,7 +172,7 @@ class messageService extends defaultService {
         dataSender,
         dataDelay,
         retry = 0,
-        extraData = {}
+        extraData = {},
     ) => {
         if (retry > 3) {
             console.log("Max retry reached");
@@ -182,7 +181,7 @@ class messageService extends defaultService {
         try {
             let engineSendMessage;
             const finalContent = await this.obfuscateLinks(
-                dataTransaction.content
+                dataTransaction.content,
             );
             if (dataTransaction.image == null) {
                 engineSendMessage = await engineService.sendMessage(
@@ -190,7 +189,8 @@ class messageService extends defaultService {
                     dataTransaction.destination,
                     finalContent,
                     dataDelay,
-                    "typing"
+                    "typing",
+                    dataTransaction.id_transaction,
                 );
             } else {
                 engineSendMessage = await engineService.sendMessageMedia(
@@ -199,7 +199,8 @@ class messageService extends defaultService {
                     finalContent,
                     dataTransaction.image,
                     dataDelay,
-                    "typing"
+                    "typing",
+                    dataTransaction.id_transaction,
                 );
             }
 
@@ -212,7 +213,7 @@ class messageService extends defaultService {
             const checkUserPrivate = await authModel.checkUserPrivate(
                 dataTransaction.user_id,
                 null,
-                "intern"
+                "intern",
             );
             if (
                 checkUserPrivate &&
@@ -241,7 +242,7 @@ class messageService extends defaultService {
                     dataTransaction.user_id,
                     dataTransaction.sender_name,
                     "ASC",
-                    true
+                    true,
                 );
                 if (getSender) {
                     const dateSave = moment()
@@ -250,7 +251,7 @@ class messageService extends defaultService {
                     await routingDetailModel.updateUsedAt(
                         getSender.routingdetail_id,
                         dateSave,
-                        dataTransaction.id_transaction
+                        dataTransaction.id_transaction,
                     );
 
                     return await this.sendMessage(
@@ -261,7 +262,7 @@ class messageService extends defaultService {
                         {
                             access: dataSender.routingdetail_id,
                             messageStatus: "BACKUP",
-                        }
+                        },
                     );
                 }
 
@@ -282,6 +283,15 @@ class messageService extends defaultService {
                         url: checkUserPrivate.url,
                     });
                 }
+            } else {
+                if (sendWebhook) {
+                    queueWebhook.add("send_webhook", {
+                        transaction_id: dataTransaction.id_transaction,
+                        status: "failed",
+                        method: checkUserPrivate.method,
+                        url: checkUserPrivate.url,
+                    });
+                }
             }
 
             const updateTransaction = await transactionModel.update(
@@ -292,7 +302,7 @@ class messageService extends defaultService {
                     status_code: statusCode,
                     access: access,
                     message_status: messageStatus,
-                }
+                },
             );
             return updateTransaction;
             //*------
@@ -311,7 +321,7 @@ class messageService extends defaultService {
                 const proto = protocol ? "" : "";
                 // gabungkan kembali tanpa mengubah path
                 return `${proto}${obfuscatedDomain}${path || ""}`;
-            }
+            },
         );
     };
 
@@ -340,7 +350,7 @@ class messageService extends defaultService {
         } catch (error) {
             throw new CustomError(
                 "Gagal membaca file Excel: " + error.message,
-                400
+                400,
             );
         }
     };
@@ -352,7 +362,7 @@ class messageService extends defaultService {
         }
 
         const checkSenderName = await routingModel.checkSenderName(
-            reqBody.sender_name
+            reqBody.sender_name,
         );
         const routing = checkSenderName.rows;
         if (routing.length == 0) {
@@ -385,7 +395,7 @@ class messageService extends defaultService {
         const messageTemp = await messageModel.findAll(
             1,
             1000,
-            reqBody.user_id
+            reqBody.user_id,
         );
         if (!messageTemp) throw new CustomError("Data Not Found", 404);
         return messageTemp;

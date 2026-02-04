@@ -19,23 +19,77 @@ class dlrController {
                         is_active = true;
                     }
 
-                    const update = await providerDetail.update(
+                    await providerDetail.update(
                         id_instance,
                         {
                             label,
                             is_active,
                         },
-                        "license_key"
+                        "license_key",
                     );
-                    if (update) {
+
+                    if (state === "DISCONNECT" || state === "BANNED") {
+                        console.log(
+                            `[CLEANUP] Instance ${id_instance} died. Cleaning pending transactions...`,
+                        );
+
+                        // A. Cari semua transaksi yang masih menggantung di instance ini
+                        const pendingTransactions =
+                            await transactionModel.findPendingByInstance(
+                                id_instance,
+                            );
+
+                        // B. Loop setiap transaksi untuk dimatikan & kirim webhook
+                        if (pendingTransactions.length > 0) {
+                            for (const trx of pendingTransactions) {
+                                // 1. Update DB ke status Failed/Stopped
+                                await transactionModel.update(
+                                    trx.id_transaction,
+                                    {
+                                        status_code: 2, // 2 = Failed
+                                        message_status: "STOPPED_INSTANCE_DIED",
+                                    },
+                                );
+
+                                // 2. Kirim Webhook "Failed" ke User
+                                const checkUserPrivate =
+                                    await authModel.checkUserPrivate(
+                                        trx.user_id,
+                                        null,
+                                        "intern",
+                                    );
+
+                                if (
+                                    checkUserPrivate?.method &&
+                                    checkUserPrivate?.url
+                                ) {
+                                    queueWebhook.add("send_webhook", {
+                                        transaction_id: trx.id_transaction,
+                                        status: "failed",
+                                        details:
+                                            "Sender disconnected/banned before delivery confirmation",
+                                        method: checkUserPrivate.method,
+                                        url: checkUserPrivate.url,
+                                    });
+                                }
+                            }
+                            message = `Instance Disconnect. ${pendingTransactions.length} pending transactions terminated.`;
+                        } else {
+                            message =
+                                "Instance Disconnect. No pending transactions found.";
+                        }
+                    } else {
+                        message = "Successfully Active Instance";
+                    }
+                    /* if (update) {
                         message = "successfully Active Instance";
                         error = false;
                         datas = update.rows[0];
-                    }
+                    } */
                     break;
                 case "DLR":
                     const result = await transactionModel.findByMessageID(
-                        data.id
+                        data.id,
                     );
                     let checkUserPrivate,
                         sendWebhook = false;
@@ -43,7 +97,7 @@ class dlrController {
                         checkUserPrivate = await authModel.checkUserPrivate(
                             result.user_id,
                             null,
-                            "intern"
+                            "intern",
                         );
                         if (
                             checkUserPrivate &&
@@ -88,7 +142,7 @@ class dlrController {
                     }
                     await transactionModel.updateDate(
                         { message_id: data.id, license_key: id_instance },
-                        notes
+                        notes,
                     );
 
                     break;

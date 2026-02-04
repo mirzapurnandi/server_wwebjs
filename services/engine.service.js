@@ -59,7 +59,7 @@ class engineService {
                             "Content-Type": "application/json",
                             "x-purnand-token": getProvider.apikey,
                         },
-                    }
+                    },
                 );
 
                 logger.info("Axios Result: ", result.data);
@@ -95,7 +95,7 @@ class engineService {
                         "Content-Type": "application/json",
                         "x-purnand-token": getProvider.apikey,
                     },
-                }
+                },
             );
 
             await provider.decrement(provider_id);
@@ -120,7 +120,7 @@ class engineService {
                         "Content-Type": "application/json",
                         "x-purnand-token": getProvider.apikey,
                     },
-                }
+                },
             );
             logger.info("Axios Result: ", result.data);
             return {
@@ -143,7 +143,7 @@ class engineService {
                         "Content-Type": "application/json",
                         "x-purnand-token": getProvider.apikey,
                     },
-                }
+                },
             );
             logger.info("Axios Result: ", result.data);
             return result.data;
@@ -163,7 +163,7 @@ class engineService {
                         "Content-Type": "application/json",
                         "x-purnand-token": getProvider.apikey,
                     },
-                }
+                },
             );
             logger.info("Axios Result: ", result.data);
             return result.data;
@@ -186,7 +186,7 @@ class engineService {
                         "Content-Type": "application/json",
                         "x-purnand-token": getProvider.apikey,
                     },
-                }
+                },
             );
             logger.info("Axios Result: ", result.data);
             return result.data;
@@ -209,7 +209,7 @@ class engineService {
                         "Content-Type": "application/json",
                         "x-purnand-token": getProvider.apikey,
                     },
-                }
+                },
             );
             logger.info("Axios Result: ", result.data);
             if (result.data) {
@@ -227,13 +227,14 @@ class engineService {
         destination,
         message,
         delay,
-        type = null
+        type = null,
+        id_transaction = null,
     ) => {
         try {
             const getProvider = await providerDetailModel.findByID(
                 1,
                 id_instance,
-                "providers"
+                "providers",
             );
             const uri =
                 type === "typing" ? "/send-message-typing" : "/send-message";
@@ -244,13 +245,14 @@ class engineService {
                     destination: destination,
                     message: message,
                     delay: delay,
+                    id_transaction: id_transaction,
                 },
                 {
                     headers: {
                         "Content-Type": "application/json",
                         "x-purnand-token": getProvider.apikey,
                     },
-                }
+                },
             );
             logger.info("Axios Result: ", result.data);
             return {
@@ -258,9 +260,29 @@ class engineService {
                 data: result.data,
             };
         } catch (error) {
-            logger.error(`Axios Catch Error: ${error.message}`);
+            /* logger.error(`Axios Catch Error: ${error.message}`);
             return {
                 status: error.status,
+                message: error.message,
+            }; */
+            if (error.code === "ECONNABORTED") {
+                logger.error(`Axios Timeout: Request took longer than 15s`);
+                return {
+                    status: 500, // Anggap 500 agar trigger Backup Sender
+                    message: "Gateway Timeout (Engine No Response)",
+                };
+            }
+            // Handle Engine Mati / Refused
+            if (error.code === "ECONNREFUSED") {
+                return {
+                    status: 500, // Anggap 500 agar trigger Backup Sender
+                    message: "Connection Refused (Engine Down)",
+                };
+            }
+
+            logger.error(`Axios Catch Error: ${error.message}`);
+            return {
+                status: error.response ? error.response.status : 500,
                 message: error.message,
             };
         }
@@ -272,13 +294,14 @@ class engineService {
         message,
         file_url,
         delay,
-        type = null
+        type = null,
+        id_transaction = null,
     ) => {
         try {
             const getProvider = await providerDetailModel.findByID(
                 1,
                 id_instance,
-                "providers"
+                "providers",
             );
             const uri =
                 type === "typing" ? "/send-media-typing" : "/send-media";
@@ -290,13 +313,14 @@ class engineService {
                     message: message,
                     file_url: file_url,
                     delay: delay,
+                    id_transaction: id_transaction,
                 },
                 {
                     headers: {
                         "Content-Type": "application/json",
                         "x-purnand-token": getProvider.apikey,
                     },
-                }
+                },
             );
             logger.info("Axios Result: ", result.data);
             return {
@@ -304,9 +328,12 @@ class engineService {
                 data: result.data,
             };
         } catch (error) {
+            if (error.code === "ECONNABORTED") {
+                return { status: 500, message: "Media Gateway Timeout" };
+            }
             logger.error(`Axios Catch Error: ${error.message}`);
             return {
-                status: error.status,
+                status: error.response ? error.response.status : 500,
                 message: error.message,
             };
         }

@@ -31,7 +31,7 @@ class TransactionModel {
         user_id,
         sender_name,
         status_code = "",
-        limit = 50
+        limit = 50,
     ) => {
         let offset = (page - 1) * limit;
         let where = `t.user_id = '${user_id}' AND t.sender_name = '${sender_name}'`;
@@ -215,7 +215,7 @@ class TransactionModel {
         date,
         senderName,
         limit = 25,
-        whereCrack = ""
+        whereCrack = "",
     ) => {
         let sqlCrack = "";
         if (whereCrack == "crack") sqlCrack = ` AND t.message_status = 'CRACK'`;
@@ -223,6 +223,18 @@ class TransactionModel {
                     WHERE t.status_code = $1 AND t.sender_name = $2 AND t.created_at >= $3 ${sqlCrack}
                     ORDER BY t.created_at ASC LIMIT $4`;
         const data = await db.query(sql, [statusCode, senderName, date, limit]);
+        if (data.rows.length === 0) return null;
+        return data.rows;
+    };
+
+    findPendingByInstance = async (license_key) => {
+        let sql = `SELECT t.* FROM transactions t
+                JOIN routing_details rd ON t.routingdetail_id = rd.id
+                JOIN provider_details pd ON rd.providerdetail_id  = pd.id
+                WHERE pd.license_key = $1 
+                AND t.status_code IN ('0', '1')
+                order by t.updated_at DESC`;
+        const data = await db.query(sql, [license_key]);
         if (data.rows.length === 0) return null;
         return data.rows;
     };
