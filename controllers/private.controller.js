@@ -7,8 +7,10 @@ class privateController {
     sendMessage = async (req, res, next) => {
         try {
             const typeMedia = req.body.file_url ? "media" : "text";
-            const privated =
-                req.body.sender_name == "cakratekno_otp" ? null : "privated";
+            // Mengubah string ke huruf kecil dulu agar 'OTP', 'Otp', atau 'otp' tetap terdeteksi
+            const privated = req.body.sender_name.toLowerCase().includes("otp")
+                ? null
+                : "privated";
             const result = await messageService.processSendMessage(
                 req.body,
                 {
@@ -16,7 +18,7 @@ class privateController {
                     email: req.user.email,
                 },
                 typeMedia,
-                privated
+                privated,
             );
             return responseHandler.success(res, "successfully Send Message", {
                 id_transaction: result.id_transaction,
@@ -28,7 +30,7 @@ class privateController {
                 price: result.price,
                 status: Object.keys(statusTransaction).find(
                     (key) =>
-                        statusTransaction[key] === parseInt(result.status_code)
+                        statusTransaction[key] === parseInt(result.status_code),
                 ),
                 time_send: result.time_send,
                 time_receive: result.time_receive,
@@ -45,7 +47,7 @@ class privateController {
             const idTransaction = req.params.id_transaction ?? null;
             const result = await transactionService.getDataTransaction(
                 idTransaction,
-                req.user.id
+                req.user.id,
             );
 
             return responseHandler.success(
@@ -62,13 +64,13 @@ class privateController {
                     status: Object.keys(statusTransaction).find(
                         (key) =>
                             statusTransaction[key] ===
-                            parseInt(result.status_code)
+                            parseInt(result.status_code),
                     ),
                     time_send: result.time_send,
                     time_receive: result.time_receive,
                     time_read: result.time_read,
                     created_at: result.created_at,
-                }
+                },
             );
         } catch (error) {
             next(error);

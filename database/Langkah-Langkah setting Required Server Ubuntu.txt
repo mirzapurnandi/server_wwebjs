@@ -1,0 +1,43 @@
+ulimit -n
+
+1. Mengatur limits.conf menjadi Unlimited
+Secara teknis, di Linux tidak ada nilai "benar-benar unlimited", tetapi kita bisa mengaturnya ke nilai maksimal yang sangat tinggi sehingga sistem tidak akan pernah mencapai batas tersebut.
+
+1. Buka file konfigurasi: sudo nano /etc/security/limits.conf
+2. Tambahkan baris berikut di bagian paling bawah (sebelum baris # End of file):
+
+// Copy data ini sebelum # End of file
+* soft    nofile          1048576
+* hard    nofile          1048576
+* soft    nproc           unlimited
+* hard    nproc           unlimited
+* soft    memlock         unlimited
+* hard    memlock         unlimited
+root            soft    nofile          1048576
+root            hard    nofile          1048576
+root            soft    nproc           unlimited
+root            hard    nproc           unlimited
+
+
+3. PENTING: Selain file di atas, Anda perlu memperbarui konfigurasi sistem agar perubahan ini terbaca oleh user yang menjalankan Node.js. 
+Buka file: sudo nano /etc/pam.d/common-session Pastikan baris berikut ada di dalamnya (tambahkan jika belum ada): session required pam_limits.so
+
+4. Simpan dan reboot server agar perubahan diterapkan secara menyeluruh.
+
+
+## Menghapus semua collection, agar bersih
+mongosh
+db.dropDatabase();
+- melihat database =>  show dbs
+- menggunakan database terpilih => use nama_database_anda
+- melihat semua collection => show collections
+
+sudo pkill -9 chrome
+sudo pkill -9 chromium
+sudo pkill -f puppeteer
+
+sudo killall -9 chrome chromium-browser node
+
+sudo rm -rf /tmp/.com.google.Chrome*
+sudo rm -rf /tmp/com.google.Chrome*
+sudo rm -rf /tmp/puppeteer_dev_profile*

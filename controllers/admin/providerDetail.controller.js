@@ -9,10 +9,12 @@ class providerDetailController {
         try {
             const page = req.query.page || 1;
             const limit = req.query.limit || 25;
+            const routingID = req.query.routing_id || null;
             const providerID = req.params.provider_id;
 
             const result = await providerDetailService.getAllData({
                 provider_id: providerID,
+                routing_id: routingID,
                 page: page,
                 limit: limit,
             });
@@ -20,7 +22,7 @@ class providerDetailController {
             return responseHandler.success(
                 res,
                 "successfully show All Provider Details",
-                result
+                result,
             );
         } catch (error) {
             next(error);
@@ -35,12 +37,12 @@ class providerDetailController {
             };
             const result = await providerDetailService.insertData(
                 req.body,
-                reqData
+                reqData,
             );
             return responseHandler.success(
                 res,
                 "Successfully inserted Provider Detail",
-                result
+                result,
             );
         } catch (error) {
             next(error);
@@ -51,12 +53,12 @@ class providerDetailController {
         try {
             const update = await providerDetailService.updateData(
                 req.params.id,
-                req.body
+                req.body,
             );
             return responseHandler.success(
                 res,
                 "Successfully updated Provider Detail",
-                update
+                update,
             );
         } catch (error) {
             next(error);
@@ -75,7 +77,7 @@ class providerDetailController {
             const detail = await providerDetailModel.findByID(id);
             const engineDelete = await engine.deleteData(
                 detail.license_key,
-                detail.provider_id
+                detail.provider_id,
             );
 
             const deletes = await providerDetailModel.delete(id);
@@ -86,7 +88,7 @@ class providerDetailController {
                     {
                         result: detail,
                         engine: engineDelete,
-                    }
+                    },
                 );
             }
         } catch (error) {
@@ -103,7 +105,7 @@ class providerDetailController {
             return responseHandler.success(
                 res,
                 "Refresh data Instance",
-                result
+                result,
             );
         } catch (error) {
             next(error);
@@ -123,13 +125,12 @@ class providerDetailController {
     getScreenshoot = async (req, res, next) => {
         const { id_instance } = req.body;
         try {
-            const result = await senderService.getDataScreenshootInstance(
-                id_instance
-            );
+            const result =
+                await senderService.getDataScreenshootInstance(id_instance);
             return responseHandler.success(
                 res,
                 "get Data Screenshoot Instance",
-                result
+                result,
             );
         } catch (error) {
             next(error);
@@ -139,13 +140,12 @@ class providerDetailController {
     getStatus = async (req, res, next) => {
         const { id_instance } = req.body;
         try {
-            const result = await senderService.getDataStatusInstance(
-                id_instance
-            );
+            const result =
+                await senderService.getDataStatusInstance(id_instance);
             return responseHandler.success(
                 res,
                 "get Data Status Instance",
-                result
+                result,
             );
         } catch (error) {
             next(error);
@@ -155,13 +155,12 @@ class providerDetailController {
     redeployInstance = async (req, res, next) => {
         const { id_instance } = req.body;
         try {
-            const result = await senderService.redeployDataInstance(
-                id_instance
-            );
+            const result =
+                await senderService.redeployDataInstance(id_instance);
             return responseHandler.success(
                 res,
                 "redeploy data Instance",
-                result
+                result,
             );
         } catch (error) {
             next(error);

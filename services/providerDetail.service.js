@@ -15,7 +15,8 @@ class providerDetailService {
             data.provider_id ?? null,
             data.page ?? 1,
             data.limit ?? 25,
-            data.user_id ?? null
+            data.user_id ?? null,
+            data.routing_id ?? null,
         );
         if (!result) {
             throw new CustomError("Gagal Query Provider", 400);

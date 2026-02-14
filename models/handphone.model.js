@@ -4,26 +4,6 @@ const uuid = require("uuid");
 const moment = require("moment-timezone");
 
 class handphoneModel {
-    /* findByID = async (id = 1, license_key = null, join = "") => {
-        let sql;
-        if (license_key == null) {
-            sql = `SELECT * FROM provider_details where id = '${id}'`;
-        } else {
-            if (join === "providers") {
-                sql = `SELECT pd.id, pd.user_id, pd.license_key, pd.is_active, pd.label,
-                        p.id as provider_id, p.name, p.code, p.method, p.url, p.apikey, p.pwdkey, p.status 
-                        FROM provider_details pd
-                        LEFT JOIN providers as p ON pd.provider_id = p.id 
-                        WHERE pd.license_key = '${license_key}'`;
-            } else {
-                sql = `SELECT * FROM provider_details where license_key = '${license_key}'`;
-            }
-        }
-        const data = await db.query(sql);
-        if (data.rows.length === 0) return null;
-        return data.rows[0];
-    }; */
-
     findAll = async (datas) => {
         let limit = datas.limit;
         let page = datas.page;
@@ -90,6 +70,7 @@ class handphoneModel {
         if ("handphonemerk_id" in data)
             update += `handphonemerk_id = ${data.handphonemerk_id}, `;
         if ("name" in data) update += `name = '${data.name}', `;
+        if ("email" in data) update += `email = '${data.email}', `;
         if ("type" in data) update += `type = '${data.type}', `;
         if ("description" in data)
             update += `description = '${data.description}', `;
@@ -100,9 +81,12 @@ class handphoneModel {
         update += `updated_at = $2`;
 
         let where = `id = $1`;
-        if (ket !== "") where = `license_key = $1`;
+        if (ket !== "") {
+            where = `license_key = $1`;
+            if (ket === "id_unik") where = `id_unik = $1`;
+        }
 
-        let sql = `UPDATE provider_details SET ${update} WHERE ${where} RETURNING *`;
+        let sql = `UPDATE handphones SET ${update} WHERE ${where} RETURNING *`;
         return await db.query(sql, [id, updated_at]);
     };
 
@@ -111,10 +95,44 @@ class handphoneModel {
         return await db.query(sql, [id]);
     };
 
-    /* delete = async (id) => {
-        let sql = `DELETE FROM provider_details WHERE id = ${id}`;
-        return await db.query(sql);
-    }; */
+    getById = async (id) => {
+        let sql = `SELECT * FROM handphones WHERE id = $1 LIMIT 1`;
+        const result = await db.query(sql, [id]);
+        return result.rows.length > 0 ? result.rows[0] : null;
+    };
+
+    getByIdUnik = async (id_unik) => {
+        let sql = `SELECT * FROM handphones WHERE id_unik = $1 LIMIT 1`;
+        const result = await db.query(sql, [id_unik]);
+        return result.rows.length > 0 ? result.rows[0] : null;
+    };
+
+    insert = async (data) => {
+        let email = data.email ?? null;
+        const created_at = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss.SSS");
+        let sql = `INSERT INTO handphones (id, handphonemerk_id, is_active, type, urutan, email, id_unik, created_at) 
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`;
+        return await db.query(sql, [
+            data.id,
+            data.handphonemerk_id,
+            data.is_active,
+            data.type,
+            data.urutan,
+            email,
+            data.id_unik,
+            created_at,
+        ]);
+    };
+
+    updateEmail = async (id, email) => {
+        const updated_at = moment()
+            .tz("Asia/Jakarta")
+            .format("YYYY-MM-DD HH:mm:ss.SSS");
+        let sql = `UPDATE handphones SET email = $1, updated_at = $2 WHERE id_unik = $3 RETURNING *`;
+        return await db.query(sql, [email, updated_at, id]);
+    };
 }
 
 module.exports = new handphoneModel();

@@ -178,6 +178,25 @@ class messageService extends defaultService {
             console.log("Max retry reached");
             return false;
         }
+        let statusCode = 0,
+            sendWebhook = false,
+            messageID = null,
+            access = extraData.access || null,
+            messageStatus = extraData.messageStatus || null;
+
+        const checkUserPrivate = await authModel.checkUserPrivate(
+            dataTransaction.user_id,
+            null,
+            "intern",
+        );
+        if (
+            checkUserPrivate &&
+            checkUserPrivate.method != null &&
+            checkUserPrivate.url != null
+        ) {
+            sendWebhook = true;
+        }
+
         try {
             let engineSendMessage;
             const finalContent = await this.obfuscateLinks(
@@ -202,25 +221,6 @@ class messageService extends defaultService {
                     "typing",
                     dataTransaction.id_transaction,
                 );
-            }
-
-            let statusCode = 0,
-                sendWebhook = false,
-                messageID = null,
-                access = extraData.access || null,
-                messageStatus = extraData.messageStatus || null;
-
-            const checkUserPrivate = await authModel.checkUserPrivate(
-                dataTransaction.user_id,
-                null,
-                "intern",
-            );
-            if (
-                checkUserPrivate &&
-                checkUserPrivate.method != null &&
-                checkUserPrivate.url != null
-            ) {
-                sendWebhook = true;
             }
 
             if (engineSendMessage.status == 200) {
@@ -284,6 +284,7 @@ class messageService extends defaultService {
                     });
                 }
             } else {
+                statusCode = 2;
                 if (sendWebhook) {
                     queueWebhook.add("send_webhook", {
                         transaction_id: dataTransaction.id_transaction,
@@ -293,22 +294,30 @@ class messageService extends defaultService {
                     });
                 }
             }
-
-            const updateTransaction = await transactionModel.update(
-                dataTransaction.id_transaction,
-                {
-                    routingdetail_id: dataSender.routingdetail_id,
-                    message_id: messageID,
-                    status_code: statusCode,
-                    access: access,
-                    message_status: messageStatus,
-                },
-            );
-            return updateTransaction;
-            //*------
         } catch (error) {
+            statusCode = 2;
+            if (sendWebhook) {
+                queueWebhook.add("send_webhook", {
+                    transaction_id: dataTransaction.id_transaction,
+                    status: "failed",
+                    method: checkUserPrivate.method,
+                    url: checkUserPrivate.url,
+                });
+            }
             console.log(error);
         }
+
+        const updateTransaction = await transactionModel.update(
+            dataTransaction.id_transaction,
+            {
+                routingdetail_id: dataSender.routingdetail_id,
+                message_id: messageID,
+                status_code: statusCode,
+                access: access,
+                message_status: messageStatus,
+            },
+        );
+        return updateTransaction;
     };
 
     obfuscateLinks = async (message) => {

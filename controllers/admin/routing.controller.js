@@ -10,7 +10,7 @@ class routingController {
             return responseHandler.success(
                 res,
                 "Sukses menambahkan Routing",
-                routing
+                routing,
             );
         } catch (error) {
             next(error);
@@ -24,7 +24,7 @@ class routingController {
             const result = await routingService.getAllData(
                 parseInt(page),
                 parseInt(limit),
-                null
+                null,
             );
             return responseHandler.success(res, "Get All Routings", result);
         } catch (error) {
@@ -42,7 +42,7 @@ class routingController {
             const resultDetail = await routingService.getRoutingDetail(
                 id,
                 parseInt(page),
-                parseInt(limit)
+                parseInt(limit),
             );
             return responseHandler.success(res, "Get Detail Routings", {
                 data: resultData,
@@ -59,7 +59,7 @@ class routingController {
             return responseHandler.success(
                 res,
                 "Successfully add Engine",
-                result
+                result,
             );
         } catch (error) {
             next(error);
@@ -73,7 +73,7 @@ class routingController {
             return responseHandler.success(
                 res,
                 "Successfully Delete Engine",
-                result
+                result,
             );
         } catch (error) {
             next(error);

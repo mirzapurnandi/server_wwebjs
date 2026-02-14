@@ -3,6 +3,7 @@ const transactionModel = require("../models/transaction.model");
 const inboxModel = require("../models/inbox.model");
 const authModel = require("../models/auth.model");
 const { queueWebhook } = require("../config/queueBullMQ");
+const chatbotService = require("../services/chatbot.service");
 
 class dlrController {
     process = async (req, res) => {
@@ -148,6 +149,48 @@ class dlrController {
                     break;
                 case "INBOX_MESSAGE":
                     await inboxModel.insert(data, id_instance);
+                    await chatbotService
+                        .handleSapaLocal(data, id_instance)
+                        .catch((err) => {
+                            console.error("Chatbot Service Error:", err);
+                        });
+                    break;
+                case "TRANSACTION_FAILED":
+                    const failedTrx = await transactionModel.findByID(
+                        data.id_transaction,
+                    );
+                    message = `Transaction ID ${data.id_transaction} not found.`;
+                    if (failedTrx) {
+                        await transactionModel.update(
+                            failedTrx.id_transaction,
+                            {
+                                status_code: 2,
+                                message_status:
+                                    data.error_detail ||
+                                    "ENGINE_TRANSACTION_FAILED",
+                            },
+                        );
+
+                        const userConfig = await authModel.checkUserPrivate(
+                            failedTrx.user_id,
+                            null,
+                            "intern",
+                        );
+
+                        if (userConfig?.method && userConfig?.url) {
+                            queueWebhook.add("send_webhook", {
+                                transaction_id: failedTrx.id_transaction,
+                                status: "failed",
+                                details:
+                                    data.error_detail ||
+                                    "Transaction failed due to instance issues",
+                                method: userConfig.method,
+                                url: userConfig.url,
+                            });
+                        }
+                        message = `Transaction ${data.id_transaction} marked as failed.`;
+                        error = false;
+                    }
                     break;
             }
 

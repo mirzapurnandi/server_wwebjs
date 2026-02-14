@@ -51,7 +51,7 @@ class RoutingDetailModel {
         if (transactionID !== null) {
             await db.query(
                 `UPDATE transactions SET created_at = $1, updated_at = $2 WHERE id_transaction = $3 RETURNING *`,
-                [usedAt, updatedAt, transactionID]
+                [usedAt, updatedAt, transactionID],
             );
         }
 
@@ -67,6 +67,20 @@ class RoutingDetailModel {
             return routingDetail;
         }
         return null;
+    };
+
+    checkRoutingDetail = async (routing_id, providerdetail_id) => {
+        if (!routing_id) return null;
+        if (!providerdetail_id) return null;
+
+        let sql = `SELECT rd.*
+                    FROM routing_details as rd
+                    WHERE rd.routing_id = $1 AND rd.providerdetail_id = $2
+                    ORDER BY rd.created_at DESC LIMIT 1`;
+
+        const data = await db.query(sql, [routing_id, providerdetail_id]);
+        if (data.rows.length === 0) return null;
+        return data.rows[0];
     };
 }
 

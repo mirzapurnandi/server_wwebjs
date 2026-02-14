@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.handphones
     description text COLLATE pg_catalog."default",
     is_active bool DEFAULT true NOT NULL,
     is_recovery bool DEFAULT false NOT NULL,
+    email character varying(255) COLLATE pg_catalog."default",
     urutan int NULL,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,

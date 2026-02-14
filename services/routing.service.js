@@ -28,7 +28,7 @@ class routingService {
         const result = await routingModel.findRoutingDetail(
             routingID,
             page,
-            limit
+            limit,
         );
         if (!result) throw new CustomError("Data Not Found", 404);
         return result;
@@ -37,7 +37,7 @@ class routingService {
     insertDataRouting = async (reqBody, reqData) => {
         await validateCreateRouting(reqBody);
         const checkSenderName = await routingModel.checkSenderName(
-            reqBody.sender_name
+            reqBody.sender_name,
         );
         if (checkSenderName.rows.length > 0) {
             throw new CustomError("Maaf, Nama Sender sudah ada", 400);
@@ -71,7 +71,7 @@ class routingService {
 
             const engineCreate = await engineService.insertData(
                 providerID,
-                client
+                client,
             );
             if (engineCreate.status !== 201) {
                 throw new CustomError(engineCreate.message, 400);
@@ -87,7 +87,7 @@ class routingService {
                     license_key: licenseKey,
                     price: price,
                 },
-                client
+                client,
             );
 
             if (!result) {
@@ -100,12 +100,12 @@ class routingService {
                     routing_id: routingID,
                     providerdetail_id: providerDetail.id,
                 },
-                client
+                client,
             );
             if (!resultRoutingDetail) {
                 throw new CustomError(
                     "Gagal menyimpan data routing_details",
-                    400
+                    400,
                 );
             }
             const routingDetail = resultRoutingDetail.rows[0];
@@ -113,12 +113,12 @@ class routingService {
             const resultRouting = await routingModel.increment(
                 routingID,
                 null,
-                client
+                client,
             );
             if (!resultRouting) {
                 throw new CustomError(
                     "Gagal Menambahkan data count routing",
-                    400
+                    400,
                 );
             }
 
@@ -134,7 +134,7 @@ class routingService {
             throw new CustomError(
                 "Maaf, harus ROLLBACK karena ada query gagal",
                 400,
-                error
+                error,
             );
         } finally {
             client.release();
@@ -143,6 +143,13 @@ class routingService {
 
     addEngine = async (reqBody) => {
         await validateAddEngine(reqBody);
+        const checkRoutingDetail = await routingDetailModel.checkRoutingDetail(
+            reqBody.routing_id,
+            reqBody.providerdetail_id,
+        );
+        if (checkRoutingDetail) {
+            throw new CustomError("Provider Detail sudah tersedia", 409);
+        }
         const result = await routingDetailModel.insert({
             routing_id: reqBody.routing_id,
             providerdetail_id: reqBody.providerdetail_id,
@@ -167,7 +174,7 @@ class routingService {
         await routingModel.decrement(
             parseInt(result.routing_id),
             isBackup,
-            null
+            null,
         );
         return true;
     };

@@ -13,7 +13,9 @@ const levels = {
 };
 
 const logFormat = printf(({ level, message }) => {
-    const timeNow = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
+    const timeNow = moment()
+        .tz("Asia/Jakarta")
+        .format("YYYY-MM-DD HH:mm:ss.SSS");
     const context = metadata.function ? `[${metadata.function}]` : "";
     return `${timeNow} [${level}]${context}: ${message}`;
 });
