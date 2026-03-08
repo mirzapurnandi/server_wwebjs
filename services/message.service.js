@@ -283,6 +283,16 @@ class messageService extends defaultService {
                         url: checkUserPrivate.url,
                     });
                 }
+            } else if (engineSendMessage.status == 400) {
+                statusCode = 3;
+                if (sendWebhook) {
+                    queueWebhook.add("send_webhook", {
+                        transaction_id: dataTransaction.id_transaction,
+                        status: "delivered",
+                        method: checkUserPrivate.method,
+                        url: checkUserPrivate.url,
+                    });
+                }
             } else {
                 statusCode = 2;
                 if (sendWebhook) {
