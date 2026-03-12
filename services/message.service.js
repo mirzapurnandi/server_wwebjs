@@ -284,11 +284,17 @@ class messageService extends defaultService {
                     });
                 }
             } else if (engineSendMessage.status == 400) {
-                statusCode = 3;
+                statusCode = 2;
+                let statusKirim = "failed";
+                if (dataTransaction.sender_name.toLowerCase().includes("otp")) {
+                    statusCode = 3;
+                    statusKirim = "delivered";
+                }
+
                 if (sendWebhook) {
                     queueWebhook.add("send_webhook", {
                         transaction_id: dataTransaction.id_transaction,
-                        status: "delivered",
+                        status: statusKirim,
                         method: checkUserPrivate.method,
                         url: checkUserPrivate.url,
                     });
