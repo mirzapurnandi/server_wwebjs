@@ -14,7 +14,7 @@ class transactionService extends defaultService {
     getDataTransaction = async (idTransaction, userID) => {
         const getTransaction = await transactionModel.findByID(
             idTransaction,
-            userID
+            userID,
         );
         if (!getTransaction) throw new CustomError("Data Not Found", 404);
 
@@ -27,7 +27,7 @@ class transactionService extends defaultService {
             data.user_id,
             data.sender_name,
             data.status_code,
-            data.limit
+            data.limit,
         );
         if (!result) {
             throw new CustomError("Gagal Query Provider", 400);
@@ -41,7 +41,7 @@ class transactionService extends defaultService {
             reqBody.date,
             reqBody.sender_name,
             reqBody.limit,
-            reqBody.crack
+            reqBody.crack,
         );
         if (!getTransaction) throw new CustomError("Data Not Found", 404);
 
@@ -54,7 +54,7 @@ class transactionService extends defaultService {
         checkUserPrivate = await authModel.checkUserPrivate(
             getOneTransaction,
             null,
-            "intern"
+            "intern",
         );
 
         if (
@@ -166,6 +166,51 @@ class transactionService extends defaultService {
                 }
             }
         } else if (
+            reqBody.type == "change_333" &&
+            (reqBody.status_code == 0 || reqBody.status_code == 1)
+        ) {
+            let hit = 0;
+            for await (const row of getTransaction) {
+                let dateNow = moment()
+                    .tz("Asia/Jakarta")
+                    .format("YYYY-MM-DD HH:mm:ss.SSS");
+                let messageID = row.messageid;
+                let routingdetailID = row.routingdetail_id;
+                messageStatus = "CRACK";
+                if (row.messageid === null) {
+                    messageID = crypto
+                        .randomBytes(11)
+                        .toString("hex")
+                        .toUpperCase();
+                    routingdetailID = null;
+                }
+
+                await transactionModel.updateByField(row.id_transaction, {
+                    routingdetail_id: routingdetailID,
+                    status_code: 3,
+                    messageid: messageID,
+                    message_status: messageStatus,
+                    time_receive: dateNow,
+                });
+
+                if (sendWebhook) {
+                    hit += 150;
+                    queueWebhook.add(
+                        "send_webhook",
+                        {
+                            transaction_id: row.id_transaction,
+                            status: "delivered",
+                            method: checkUserPrivate.method,
+                            url: checkUserPrivate.url,
+                        },
+                        {
+                            delay: hit,
+                        },
+                    );
+                    totalSending++;
+                }
+            }
+        } else if (
             reqBody.type == "change_4" &&
             (reqBody.status_code == 1 || reqBody.status_code == 3)
         ) {
@@ -213,9 +258,8 @@ class transactionService extends defaultService {
 
     sendDataTransaction = async (idTransaction, status, method, url) => {
         try {
-            const checkTransaction = await this.getDataTransaction(
-                idTransaction
-            );
+            const checkTransaction =
+                await this.getDataTransaction(idTransaction);
             if (!checkTransaction) {
                 throw new Error(`Transaction ${idTransaction} not found`);
             }
@@ -266,14 +310,14 @@ class transactionService extends defaultService {
             logger.info(
                 `✅ Axios Result: ${
                     data.status
-                } [${method.toUpperCase()}] ${url}`
+                } [${method.toUpperCase()}] ${url}`,
             );
         } catch (error) {
             if (error.response) {
                 console.error(
                     "❌ Axios Response Error:",
                     error.response.status,
-                    error.response.data
+                    error.response.data,
                 );
             } else if (error.request) {
                 console.error("❌ Axios No Response:", error.request);
