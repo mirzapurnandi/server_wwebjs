@@ -70,9 +70,11 @@ class transactionService extends defaultService {
             await routingModel.update(reqBody.sender_name, {
                 delay_max: delayMax,
             });
+            const delayMaxDef = reqBody.crack == 4 ? 4 : null;
             for await (const row of getTransaction) {
                 queueInitSender.add("processing_data", {
                     transaction_id: row.id_transaction,
+                    delayMaxDefault: delayMaxDef,
                 });
             }
         } else if (reqBody.type == "change_1" && reqBody.status_code == 0) {

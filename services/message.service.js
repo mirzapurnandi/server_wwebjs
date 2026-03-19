@@ -73,13 +73,14 @@ class messageService extends defaultService {
         if (privated === null) {
             queueInitSender.add("processing_data", {
                 transaction_id: insertTransaction.id_transaction,
+                delayMaxDefault: null,
             });
         }
 
         return insertTransaction;
     };
 
-    processGetSender = async (transaction_id) => {
+    processGetSender = async (transaction_id, delayMaxDefault = null) => {
         try {
             const getTransaction =
                 await transactionModel.findByID(transaction_id);
@@ -95,7 +96,10 @@ class messageService extends defaultService {
 
                 if (getSender) {
                     const secondDelay = parseInt(getSender.delay);
-                    const secondDelayMax = parseInt(getSender.delay_max);
+                    const secondDelayMax =
+                        delayMaxDefault == null
+                            ? parseInt(getSender.delay_max)
+                            : parseInt(delayMaxDefault);
                     const dateNow = moment()
                         .tz("Asia/Jakarta")
                         .format("YYYY-MM-DD HH:mm:ss.SSS");
@@ -146,7 +150,8 @@ class messageService extends defaultService {
                     queueSendMessage.add(
                         "sending_message",
                         {
-                            type: "insert",
+                            type:
+                                delayMaxDefault == null ? "insert" : "checking",
                             dataTransaction: getTransaction,
                             dataSender: getSender,
                             dataDelay: secondDelay,
@@ -224,17 +229,22 @@ class messageService extends defaultService {
             }
 
             if (engineSendMessage.status == 200) {
-                const engine = engineSendMessage.data.data;
-                messageID = engine.id_message;
-                statusCode = 1;
+                if (dataDelay == "BYPASS") {
+                    statusCode = 1;
+                    messageStatus = "CHECKING";
+                } else {
+                    const engine = engineSendMessage.data.data;
+                    messageID = engine.id_message;
+                    statusCode = 1;
 
-                if (sendWebhook) {
-                    queueWebhook.add("send_webhook", {
-                        transaction_id: dataTransaction.id_transaction,
-                        status: "sent",
-                        method: checkUserPrivate.method,
-                        url: checkUserPrivate.url,
-                    });
+                    if (sendWebhook) {
+                        queueWebhook.add("send_webhook", {
+                            transaction_id: dataTransaction.id_transaction,
+                            status: "sent",
+                            method: checkUserPrivate.method,
+                            url: checkUserPrivate.url,
+                        });
+                    }
                 }
             } else if (engineSendMessage.status == 500) {
                 // Cari Engine Backup
@@ -286,7 +296,10 @@ class messageService extends defaultService {
             } else if (engineSendMessage.status == 400) {
                 statusCode = 2;
                 let statusKirim = "failed";
-                if (dataTransaction.sender_name.toLowerCase().includes("otp")) {
+                if (
+                    dataTransaction.sender_name.toLowerCase().includes("otp") ||
+                    dataDelay == "BYPASS"
+                ) {
                     statusCode = 3;
                     statusKirim = "delivered";
                 }
@@ -408,6 +421,7 @@ class messageService extends defaultService {
             if (insertTransaction) {
                 await queueInitSender.add("processing_data", {
                     transaction_id: insertTransaction.id_transaction,
+                    delayMaxDefault: null,
                 });
                 await messageModel.delete(row.id);
             }

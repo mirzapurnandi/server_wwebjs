@@ -5,9 +5,10 @@ const worker = new Worker(
     "InitSender",
     async (job) => {
         if (job.name === "processing_data") {
-            const { transaction_id } = job.data;
+            const { transaction_id, delayMaxDefault } = job.data;
             const result = await messageService.processGetSender(
-                transaction_id
+                transaction_id,
+                delayMaxDefault,
             );
             return result;
         }
@@ -18,7 +19,7 @@ const worker = new Worker(
             port: 6379,
         },
         concurrency: 1,
-    }
+    },
 );
 
 worker.on("completed", async (job, result) => {

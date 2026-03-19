@@ -10,7 +10,14 @@ const worker = new Worker(
                 const result = await messageService.sendMessage(
                     dataTransaction,
                     dataSender,
-                    dataDelay
+                    dataDelay,
+                );
+                return result;
+            } else if (type == "checking") {
+                const result = await messageService.sendMessage(
+                    dataTransaction,
+                    dataSender,
+                    "BYPASS",
                 );
                 return result;
             }
@@ -22,7 +29,7 @@ const worker = new Worker(
             port: 6379,
         },
         concurrency: 12,
-    }
+    },
 );
 
 worker.on("completed", async (job, result) => {
