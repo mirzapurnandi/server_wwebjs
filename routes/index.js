@@ -27,6 +27,7 @@ const {
     queueSendMessage,
     queueInitSender,
     queueWebhook,
+    queueWarmup,
 } = require("../config/queueBullMQ");
 
 const serverAdapter = new ExpressAdapter();
@@ -37,6 +38,7 @@ createBullBoard({
         new BullMQAdapter(queueInitSender),
         new BullMQAdapter(queueSendMessage),
         new BullMQAdapter(queueWebhook),
+        new BullMQAdapter(queueWarmup),
     ],
     serverAdapter: serverAdapter,
 });

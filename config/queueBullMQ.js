@@ -34,10 +34,18 @@ const queueWebhook = new Queue("Webhook", {
     },
 });
 
+const queueWarmup = new Queue("Warmup", {
+    connection: {
+        host: "localhost",
+        port: 6379,
+    },
+});
+
 module.exports = {
     queue,
     queuePoint,
     queueSendMessage,
     queueInitSender,
     queueWebhook,
+    queueWarmup,
 };

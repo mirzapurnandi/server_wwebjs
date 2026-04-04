@@ -1,5 +1,6 @@
 const messageService = require("../../services/message.service");
 const responseHandler = require("../../utils/responseHandler");
+const { queueWarmup } = require("../../config/queueBullMQ");
 
 class messageController {
     sendMessage = async (req, res, next) => {
@@ -11,7 +12,7 @@ class messageController {
             return responseHandler.success(
                 res,
                 "successfully Send Message",
-                result
+                result,
             );
         } catch (error) {
             console.log(error);
@@ -27,12 +28,12 @@ class messageController {
                     user_id: req.body.user_id,
                     email: req.user.email,
                 },
-                "media"
+                "media",
             );
             return responseHandler.success(
                 res,
                 "successfully Send Message",
-                result
+                result,
             );
         } catch (error) {
             console.log(error);
@@ -43,12 +44,12 @@ class messageController {
     sendMessageBack = async (req, res, next) => {
         try {
             const result = await messageService.sendMessage(
-                req.body.transaction_id
+                req.body.transaction_id,
             );
             return responseHandler.success(
                 res,
                 "successfully Send Message",
-                result
+                result,
             );
         } catch (error) {
             console.log(error);
@@ -68,7 +69,7 @@ class messageController {
             return responseHandler.success(
                 res,
                 "successfully Upload File",
-                result
+                result,
             );
         } catch (error) {
             next(error);
@@ -79,12 +80,12 @@ class messageController {
         try {
             const result = await messageService.processSendBulkMessage(
                 req.body,
-                { user_id: req.body.user_id }
+                { user_id: req.body.user_id },
             );
             return responseHandler.success(
                 res,
                 "successfully Send Bulk Message",
-                result
+                result,
             );
         } catch (error) {
             next(error);
@@ -97,9 +98,41 @@ class messageController {
             return responseHandler.success(
                 res,
                 "successfully Get Data Message Temporary",
-                result
+                result,
             );
         } catch (error) {
+            next(error);
+        }
+    };
+
+    triggerWarmup = async (req, res, next) => {
+        try {
+            const { id_instance, destination } = req.body; // Ini adalah initiator (nomor_1)
+
+            if (!id_instance || !destination) {
+                return responseHandler.error(
+                    res,
+                    "id_instance dan destination diperlukan",
+                    null,
+                    400,
+                );
+            }
+
+            await queueWarmup.add("start_warmup", {
+                initiator_id: id_instance,
+                destination_hp: destination,
+            });
+
+            return responseHandler.success(
+                res,
+                "Skenario Auto-Warmup berhasil dijadwalkan di Background Job.",
+                {
+                    initiator: id_instance,
+                    destination: destination,
+                },
+            );
+        } catch (error) {
+            console.log(error);
             next(error);
         }
     };

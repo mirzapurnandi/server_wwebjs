@@ -4,6 +4,7 @@ const inboxModel = require("../models/inbox.model");
 const authModel = require("../models/auth.model");
 const { queueWebhook } = require("../config/queueBullMQ");
 const chatbotService = require("../services/chatbot.service");
+const warmupService = require("../services/warmup.service");
 
 class dlrController {
     process = async (req, res) => {
@@ -149,11 +150,35 @@ class dlrController {
                     break;
                 case "INBOX_MESSAGE":
                     await inboxModel.insert(data, id_instance);
-                    await chatbotService
-                        .handleSapaLocal(data, id_instance)
-                        .catch((err) => {
-                            console.error("Chatbot Service Error:", err);
-                        });
+                    let textContent;
+                    if (data.type === "text") {
+                        await chatbotService
+                            .handleSapaLocal(data, id_instance)
+                            .catch((err) => {
+                                console.error("Chatbot Service Error:", err);
+                            });
+                        textContent = data.content;
+                    } else {
+                        textContent = data.caption;
+                    }
+
+                    // --- PERBAIKAN WARMUP ---
+                    // Tangkap teks baik dari pesan biasa maupun caption gambar
+
+                    // Hapus pengecekan data.type === "text"
+                    if (textContent.match(/\[\d+\]/)) {
+                        // Timpa data.content agar konsisten saat dibaca oleh warmupService
+                        data.content = textContent;
+
+                        await warmupService
+                            .handleWarmupReply(data, id_instance)
+                            .catch((err) => {
+                                console.error(
+                                    "Warmup Reply Error:",
+                                    err.message,
+                                );
+                            });
+                    }
                     break;
                 case "TRANSACTION_FAILED":
                     const failedTrx = await transactionModel.findByID(

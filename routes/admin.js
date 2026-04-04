@@ -37,17 +37,17 @@ router.put("/provider-detail/:id", providerDetailController.updateData);
 router.delete("/provider-detail", providerDetailController.deleteData);
 router.post(
     "/provider-detail-refresh",
-    providerDetailController.refreshInstance
+    providerDetailController.refreshInstance,
 );
 router.post("/provider-detail-status", providerDetailController.getStatus);
 router.post("/provider-detail-qr", providerDetailController.getQR);
 router.post(
     "/provider-detail-screenshot",
-    providerDetailController.getScreenshoot
+    providerDetailController.getScreenshoot,
 );
 router.post(
     "/provider-detail/redeploy",
-    providerDetailController.redeployInstance
+    providerDetailController.redeployInstance,
 );
 
 router.get("/routing", routingController.getAll);
@@ -62,7 +62,7 @@ router.post("/message/list-temp", messageController.getMessageTemp);
 router.post(
     "/message/upload",
     upload.single("file"),
-    messageController.uploadFile
+    messageController.uploadFile,
 );
 router.post("/message/upload/send", messageController.uploadFileSend);
 
@@ -75,5 +75,7 @@ router.post("/transaction-trysend", transactionController.trySend);
 router.get("/transaction-filter", transactionController.getAllByFilter);
 
 router.get("/handphone", handphoneController.getAll);
+
+router.post("/message/warmup", messageController.triggerWarmup);
 
 module.exports = router;

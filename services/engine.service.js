@@ -292,7 +292,7 @@ class engineService {
         id_instance,
         destination,
         message,
-        file_url,
+        mediaData,
         delay,
         type = null,
         id_transaction = null,
@@ -305,28 +305,33 @@ class engineService {
             );
             const uri =
                 type === "typing" ? "/send-media-typing" : "/send-media";
-            const result = await axios.post(
-                getProvider.url + uri,
-                {
-                    id_instance: id_instance,
-                    destination: destination,
-                    message: message,
-                    file_url: file_url,
-                    delay: delay,
-                    id_transaction: id_transaction,
-                },
-                {
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-purnand-token": getProvider.apikey,
-                    },
-                },
-            );
-            logger.info("Axios Result: ", result.data);
-            return {
-                status: result.status,
-                data: result.data,
+
+            // Siapkan payload default
+            let payload = {
+                id_instance: id_instance,
+                destination: destination,
+                message: message,
+                delay: delay,
+                id_transaction: id_transaction,
             };
+
+            // Cek apakah ini Base64 (dari Warmup) atau file_url (dari Blast biasa)
+            if (typeof mediaData === "object" && mediaData.base64_data) {
+                payload.base64_data = mediaData.base64_data;
+                payload.mimetype = mediaData.mimetype;
+                payload.filename = mediaData.filename;
+            } else {
+                // Backward compatibility untuk fitur blast excel yang lama
+                payload.file_url = mediaData;
+            }
+
+            const result = await axios.post(getProvider.url + uri, payload, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-purnand-token": getProvider.apikey,
+                },
+            });
+            return { status: result.status, data: result.data };
         } catch (error) {
             if (error.code === "ECONNABORTED") {
                 return { status: 500, message: "Media Gateway Timeout" };
