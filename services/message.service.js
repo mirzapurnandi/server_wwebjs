@@ -204,9 +204,7 @@ class messageService extends defaultService {
 
         try {
             let engineSendMessage;
-            const finalContent = await this.obfuscateLinks(
-                dataTransaction.content,
-            );
+            const finalContent = dataTransaction.destination; //await this.obfuscateLinks(dataTransaction.content);
             if (dataTransaction.image == null) {
                 engineSendMessage = await engineService.sendMessage(
                     dataSender.license_key,
