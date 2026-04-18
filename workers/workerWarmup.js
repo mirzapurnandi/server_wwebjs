@@ -56,7 +56,7 @@ const worker = new Worker(
             host: "localhost",
             port: 6379,
         },
-        concurrency: 5, // Izinkan 5 balasan berjalan bersamaan
+        concurrency: 10, // Izinkan 5 balasan berjalan bersamaan
     },
 );
 
