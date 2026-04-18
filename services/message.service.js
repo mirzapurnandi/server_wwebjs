@@ -417,10 +417,10 @@ class messageService extends defaultService {
                 content: description,
             });
             if (insertTransaction) {
-                await queueInitSender.add("processing_data", {
+                /* await queueInitSender.add("processing_data", {
                     transaction_id: insertTransaction.id_transaction,
                     delayMaxDefault: null,
-                });
+                }); */
                 await messageModel.delete(row.id);
             }
         }
