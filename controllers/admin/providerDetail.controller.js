@@ -8,7 +8,7 @@ class providerDetailController {
     getAll = async (req, res, next) => {
         try {
             const page = req.query.page || 1;
-            const limit = req.query.limit || 25;
+            const limit = req.query.limit || 100;
             const routingID = req.query.routing_id || null;
             const providerID = req.params.provider_id;
 
