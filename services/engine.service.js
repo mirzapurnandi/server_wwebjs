@@ -229,6 +229,8 @@ class engineService {
         delay,
         type = null,
         id_transaction = null,
+        footer_msg = null,
+        header_msg = null,
     ) => {
         try {
             const getProvider = await providerDetailModel.findByID(
@@ -246,6 +248,8 @@ class engineService {
                     message: message,
                     delay: delay,
                     id_transaction: id_transaction,
+                    footer_msg: footer_msg,
+                    header_msg: header_msg,
                 },
                 {
                     headers: {
@@ -296,6 +300,8 @@ class engineService {
         delay,
         type = null,
         id_transaction = null,
+        footer_msg = null,
+        header_msg = null,
     ) => {
         try {
             const getProvider = await providerDetailModel.findByID(

@@ -136,7 +136,7 @@ class RoutingModel {
         const status = true;
         const sortManipulate = sort === "DESC" ? "ASC" : "DESC";
         let sql = `SELECT pd.id, pd.provider_id, pd.license_key, pd.is_active, pd.label, pd.uuid, pd.price, pd.expired_at, 
-                    pd.handphone_id, rd.id as routingdetail_id, rd.status, rd.created_at, rd.used_at, r.count, r.delay, r.type, r.delay_max
+                    pd.handphone_id, rd.id as routingdetail_id, rd.status, rd.created_at, rd.used_at, r.count, r.delay, r.type, r.delay_max, r.footer_msg, r.header_msg
                     FROM routing_details rd
                     INNER JOIN routings r ON rd.routing_id = r.id
                     INNER JOIN provider_details pd ON rd.providerdetail_id = pd.id

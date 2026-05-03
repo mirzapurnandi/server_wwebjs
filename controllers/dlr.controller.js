@@ -4,7 +4,9 @@ const inboxModel = require("../models/inbox.model");
 const authModel = require("../models/auth.model");
 const { queueWebhook } = require("../config/queueBullMQ");
 const chatbotService = require("../services/chatbot.service");
+const handphoneBlockModel = require("../models/handphoneBlock.model");
 const warmupService = require("../services/warmup.service");
+const engineService = require("../services/engine.service");
 
 class dlrController {
     process = async (req, res) => {
@@ -160,6 +162,74 @@ class dlrController {
                         textContent = data.content;
                     } else {
                         textContent = data.caption;
+                    }
+
+                    if (
+                        textContent &&
+                        textContent.toUpperCase().includes("STOP")
+                    ) {
+                        // Bersihkan nomor dari @c.us jika ada
+                        let cleanPhone =
+                            data.real_phone || data.from.split("@")[0];
+                        cleanPhone = cleanPhone.replace(/[^0-9]/g, "");
+
+                        const isBlocked =
+                            await handphoneBlockModel.check(cleanPhone);
+
+                        if (isBlocked) {
+                            console.log(
+                                `[BLACKLIST] Melewati pengiriman ke ${cleanPhone} (User telah Opt-Out)`,
+                            );
+                        } else {
+                            // Masukkan ke tabel blacklist
+                            await handphoneBlockModel.insertIfNotExist(
+                                cleanPhone,
+                            );
+                            console.log(
+                                `[OPT-OUT] Nomor ${cleanPhone} telah ditambahkan ke blacklist.`,
+                            );
+
+                            // Siapkan Spintax Pesan Balasan
+                            let spintaxReply =
+                                "{Terima kasih|Baik, terima kasih|Terima kasih atas konfirmasinya|Noted, terima kasih|Siap, terima kasih}. {Anda telah masuk ke dalam daftar pengecualian sistem kami|Nomor Anda sudah dimasukkan ke daftar pengecualian|Nomor ini telah kami keluarkan dari daftar broadcast|Permintaan Anda sudah kami catat di sistem kami|Nomor Anda telah berhasil kami blokir dari pengiriman sistem}. {Anda tidak akan menerima pesan promosi dari kami lagi|Mulai sekarang Anda tidak akan lagi menerima info promo dari kami|Kami pastikan Anda tidak menerima pesan promosi ke depannya|Sistem kami tidak akan mengirimkan pesan promosi otomatis lagi ke nomor ini}.";
+
+                            // Fungsi sederhana untuk memproses Spintax
+                            let matches, options, randomOpt;
+                            let regEx = new RegExp(/{([^{}]+?)}/);
+                            while (
+                                (matches = regEx.exec(spintaxReply)) !== null
+                            ) {
+                                options = matches[1].split("|");
+                                randomOpt = Math.floor(
+                                    Math.random() * options.length,
+                                );
+                                spintaxReply = spintaxReply.replace(
+                                    matches[0],
+                                    options[randomOpt],
+                                );
+                            }
+
+                            const finalReplyMsg = spintaxReply;
+
+                            // Kirim balasan Terima Kasih
+                            try {
+                                await engineService.sendMessage(
+                                    id_instance,
+                                    data.from,
+                                    finalReplyMsg,
+                                    3, // delay 3 detik agar lebih natural
+                                    "typing",
+                                    null,
+                                    null,
+                                    null,
+                                );
+                            } catch (err) {
+                                console.error(
+                                    "[OPT-OUT] Gagal mengirim balasan:",
+                                    err.message,
+                                );
+                            }
+                        }
                     }
 
                     // --- PERBAIKAN WARMUP ---

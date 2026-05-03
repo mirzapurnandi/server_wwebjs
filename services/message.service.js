@@ -7,6 +7,7 @@ const engineService = require("./engine.service");
 const walletService = require("./wallet.service");
 const authModel = require("../models/auth.model");
 const handphoneModel = require("../models/handphone.model");
+const handphoneBlockModel = require("../models/handphoneBlock.model");
 const {
     queueInitSender,
     queueSendMessage,
@@ -203,6 +204,40 @@ class messageService extends defaultService {
         }
 
         try {
+            const cleanDestination = dataTransaction.destination.split("@")[0];
+            const isBlocked = await handphoneBlockModel.check(cleanDestination);
+
+            if (isBlocked) {
+                console.log(
+                    `[BLACKLIST] Melewati pengiriman ke ${cleanDestination} (User telah Opt-Out)`,
+                );
+
+                // Set status seakan-akan sukses (Delivered) agar API pelanggan tidak error
+                statusCode = 3;
+                messageStatus = "BLOCKED_BY_USER_OPTOUT";
+
+                if (sendWebhook) {
+                    queueWebhook.add("send_webhook", {
+                        transaction_id: dataTransaction.id_transaction,
+                        status: "delivered", // Kirim status delivered palsu
+                        method: checkUserPrivate.method,
+                        url: checkUserPrivate.url,
+                    });
+                }
+
+                const updateTransaction = await transactionModel.update(
+                    dataTransaction.id_transaction,
+                    {
+                        routingdetail_id: dataSender.routingdetail_id,
+                        message_id: "BLOCKED_OPT_OUT_" + Date.now(), // ID palsu
+                        status_code: statusCode,
+                        access: access,
+                        message_status: messageStatus,
+                    },
+                );
+                return updateTransaction; // Hentikan proses eksekusi di sini
+            }
+
             let engineSendMessage;
             const finalContent = dataTransaction.content; //await this.obfuscateLinks(dataTransaction.content);
             if (dataTransaction.image == null) {
@@ -213,6 +248,8 @@ class messageService extends defaultService {
                     dataDelay,
                     "typing",
                     dataTransaction.id_transaction,
+                    dataSender.footer_msg,
+                    dataSender.header_msg,
                 );
             } else {
                 engineSendMessage = await engineService.sendMessageMedia(
@@ -223,6 +260,8 @@ class messageService extends defaultService {
                     dataDelay,
                     "typing",
                     dataTransaction.id_transaction,
+                    dataSender.footer_msg,
+                    dataSender.header_msg,
                 );
             }
 
