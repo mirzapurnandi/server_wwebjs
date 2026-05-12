@@ -319,6 +319,8 @@ class engineService {
                 message: message,
                 delay: delay,
                 id_transaction: id_transaction,
+                footer_msg: footer_msg,
+                header_msg: header_msg,
             };
 
             // Cek apakah ini Base64 (dari Warmup) atau file_url (dari Blast biasa)
