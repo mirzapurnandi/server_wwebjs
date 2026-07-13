@@ -3,7 +3,7 @@ set -e
 
 APP_NAME="server"
 APP_DIR="/var/www/$APP_NAME"
-DOMAIN="server.wasend.id"
+DOMAIN="server.purnandi.com"
 PG_USER="mirza"
 PG_PASS="Hanacankaliny03."
 PG_DB="db_wwebjs"

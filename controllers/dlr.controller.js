@@ -236,7 +236,8 @@ class dlrController {
                     // Tangkap teks baik dari pesan biasa maupun caption gambar
 
                     // Hapus pengecekan data.type === "text"
-                    if (textContent.match(/\[\d+\]/)) {
+                    //if (textContent.match(/\[\d+\]/)) {
+                    if (textContent.match(/,([a-z]),/i)) {
                         // Timpa data.content agar konsisten saat dibaca oleh warmupService
                         data.content = textContent;
 

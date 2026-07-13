@@ -20,10 +20,12 @@ class warmupService {
             .replace("@c.us", "")
             .replace("@s.whatsapp.net", "");
 
-        const match = text.match(/\[(\d+)\]/);
+        const match = text.match(/,([a-z]),/i);
         if (!match) return;
 
-        const currentStep = parseInt(match[1]);
+        // 2. KONVERSI HURUF MENJADI ANGKA (a=1, b=2, z=26)
+        const letter = match[1].toLowerCase();
+        const currentStep = letter.charCodeAt(0) - 96;
         const nextStep = currentStep + 1;
 
         // 1. DINAMIS SAMPAI N: Cek apakah ada naskah untuk Step berikutnya
