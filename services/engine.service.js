@@ -238,8 +238,15 @@ class engineService {
                 id_instance,
                 "providers",
             );
-            const uri =
+
+            let uri =
                 type === "typing" ? "/send-message-typing" : "/send-message";
+            if (delay <= 1)
+                uri =
+                    type === "typing"
+                        ? "/send-message"
+                        : "/send-message-typing";
+
             const result = await axios.post(
                 getProvider.url + uri,
                 {
