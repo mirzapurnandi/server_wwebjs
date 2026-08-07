@@ -197,7 +197,7 @@ class transactionService extends defaultService {
 
                 if (sendWebhook) {
                     const randomInterval =
-                        Math.floor(Math.random() * (910 - 200 + 1)) + 200;
+                        Math.floor(Math.random() * (650 - 180 + 1)) + 180;
                     hit += randomInterval;
                     queueWebhook.add(
                         "send_webhook",
