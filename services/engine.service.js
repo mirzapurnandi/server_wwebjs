@@ -264,7 +264,7 @@ class engineService {
                         "x-purnand-token": getProvider.apikey,
                     },
                     family: 4,
-                    timeout: 15000,
+                    timeout: 60000,
                 },
             );
             logger.info("Axios Result: ", result.data);
@@ -348,7 +348,7 @@ class engineService {
                     "x-purnand-token": getProvider.apikey,
                 },
                 family: 4,
-                timeout: 15000,
+                timeout: 60000,
             });
             return { status: result.status, data: result.data };
         } catch (error) {
