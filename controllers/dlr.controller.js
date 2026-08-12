@@ -7,6 +7,7 @@ const chatbotService = require("../services/chatbot.service");
 const handphoneBlockModel = require("../models/handphoneBlock.model");
 const warmupService = require("../services/warmup.service");
 const engineService = require("../services/engine.service");
+const senderService = require("../services/sender.service");
 
 class dlrController {
     process = async (req, res) => {
@@ -44,7 +45,10 @@ class dlrController {
                             );
 
                         // B. Loop setiap transaksi untuk dimatikan & kirim webhook
-                        if (pendingTransactions.length > 0) {
+                        if (
+                            pendingTransactions.length > 0 &&
+                            state === "BANNED"
+                        ) {
                             for (const trx of pendingTransactions) {
                                 // 1. Update DB ke status Failed/Stopped
                                 await transactionModel.update(
@@ -81,6 +85,10 @@ class dlrController {
                         } else {
                             message =
                                 "Instance Disconnect. No pending transactions found.";
+                        }
+
+                        if (state === "DISCONNECT") {
+                            senderService.getDataStatusInstance(id_instance);
                         }
                     } else {
                         message = "Successfully Active Instance";
