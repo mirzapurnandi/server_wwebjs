@@ -333,13 +333,13 @@ class messageService extends defaultService {
             } else if (engineSendMessage.status == 400) {
                 statusCode = 2;
                 let statusKirim = "failed";
-                if (
+                /* if (
                     dataTransaction.sender_name.toLowerCase().includes("otp") ||
                     dataDelay == "BYPASS"
                 ) {
                     statusCode = 3;
                     statusKirim = "delivered";
-                }
+                } */
 
                 if (sendWebhook) {
                     queueWebhook.add("send_webhook", {
