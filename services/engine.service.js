@@ -218,7 +218,7 @@ class engineService {
             return null;
         } catch (error) {
             logger.error(`Axios Catch Error: ${error.message}`);
-            throw new CustomError(error.message, 400);
+            return null;
         }
     };
 
